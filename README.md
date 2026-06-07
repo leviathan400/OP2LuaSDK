@@ -1,4 +1,4 @@
-# OP2LuaSDK - Outpost 2 Mission Software Development Kit
+# Outpost 2 Mission Software Development Kit
 
 **Write Outpost 2 missions in Lua - no compiler, no DLL authoring.**
 
@@ -43,12 +43,13 @@ OP2LuaSDK/
 
 ---
 
-## Quick start (5 minutes)
+## Quick Start
 
 1. **Install the runtime.** Copy `bin/OP2LuaCore.dll` into your Outpost 2 `OPU` folder
    (see [`INSTALL.md`](INSTALL.md) for the exact path on 1.4.1).
-2. **Play a sample.** Copy a folder from `samples/` (e.g. `hold-the-line/`) into `OPU\maps`,
-   launch Outpost 2, and pick it from the colony game list.
+2. **Play a sample.** Copy the three files from a `samples/` folder (e.g. `hold-the-line/`) into
+   `OPU\maps\LUA\`, launch Outpost 2, and pick it from the Colony Games list. (A mission lists under
+   Colony Games when its `.dll` filename starts with `c` - see [`INSTALL.md`](INSTALL.md).)
 3. **Read its `.lua`.** Open `samples/hold-the-line/HoldTheLine.lua` - that's the entire mission.
 4. **Make your own.** Run `tools/op2lua-newmission "My First Mission"` (or `tools/new-mission.ps1 -Name "My First Mission"`) and edit the two `.lua`
    files it generates. See [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md).
@@ -79,7 +80,7 @@ short read at the bottom of [`docs/API.md`](docs/API.md).
 
 ---
 
-## Need more?
+## Misc
 
 - **Full API:** [`docs/API.md`](docs/API.md)
 - **Tutorial:** [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md)

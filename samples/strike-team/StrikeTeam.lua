@@ -12,11 +12,12 @@
 --   players 1 (you) and 2 (the enemy)
 
 function on_init()
-  game.message("STRIKE TEAM: destroy the enemy Command Center to the east!")
-  game.sound("NewMissionObjective")
-
-  -- Lock morale so the colony doesn't fall apart while you focus on the assault.
   game.morale_steady()
+  game.message("STRIKE TEAM: destroy the enemy Command Center to the east!")
+ 
+  at_mark(1, function()
+    game.sound("NewMissionObjective")
+  end)
 
   -- The enemy base scrambles defenders the first time YOUR units reach it.
   -- region:units(player) returns the player's units inside the region.
@@ -24,7 +25,7 @@ function on_init()
     game.message("We've been spotted - defenders are scrambling!")
     game.sound("EnemyUnitSighted")
     local defenders = game.create_unit{
-      type = "Tiger", player = players[2], at = regions["enemy_base"], count = 4, weapon = "Microwave",
+      type = "Tiger", player = players[2], at = regions["enemy_reinforcements"], count = 5, weapon = "Microwave",
     }
     for _, t in ipairs(defenders) do t:attack_move(regions["muster"]) end   -- counter-attack westward
   end)
@@ -37,7 +38,7 @@ function on_init()
   end)
 
   -- Reinforcements arrive for you after one minute.
-  after(marks(1 * 60), function()
+  after(game.minutes(1), function()
     game.message("Reinforcements have arrived at the muster point!")
     game.sound("VehicleReady")
     game.create_unit{ type = "Tiger", player = players[1], at = regions["muster"], count = 3, weapon = "ThorsHammer" }

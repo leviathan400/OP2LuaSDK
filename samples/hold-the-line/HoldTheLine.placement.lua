@@ -1,4 +1,4 @@
--- placement.lua  -  GENERATED FROM mission.opm  -  DO NOT EDIT
+-- placement.lua
 --
 -- This file is produced by OP2MissionEditor (exported from the .opm). It is pure
 -- data: where everything starts. The OP2Lua runtime reads this table and applies
@@ -10,7 +10,7 @@
 return {
   -- Mission-list metadata (read during the list scan to fill OP2's DescBlock).
   name     = "Hold the Line",
-  map      = "newworld.map",
+  map      = "eden01.map",
   tech     = "MULTITEK.TXT",
   type     = "Colony",
   max_tech = 12,
@@ -34,16 +34,19 @@ return {
   },
 
   units = {
-    -- Your starting base (player 1)
-    { type = "CommandCenter",  player = 1, at = { 10, 56 }, health = 1.0 },
-    { type = "Agridome",       player = 1, at = { 13, 56 }, health = 1.0 },
-    { type = "Tokamak",        player = 1, at = { 13, 58 }, health = 1.0 },
-    { type = "StructureFactory", player = 1, at = { 10, 59 }, health = 1.0 },
-
-    -- The enemy base (player 2). "enemy_cc" is referenced from mission.lua.
-    { name = "enemy_cc", type = "CommandCenter", player = 2, at = { 62, 40 }, health = 1.0 },
-    { type = "GuardPost", player = 2, at = { 64, 41 }, weapon = "RPG", health = 1.0 },
-    { type = "GuardPost", player = 2, at = { 60, 41 }, weapon = "Laser", health = 1.0 },
+    { type = "CommandCenter", player = 1, at = { 5, 60 } },
+    { type = "Agridome", player = 1, at = { 14, 60 } },
+    { type = "Tokamak", player = 1, at = { 4, 49 } },
+    { type = "StructureFactory", player = 1, at = { 10, 59 } },
+    { name = "enemy_cc", type = "CommandCenter", player = 2, at = { 58, 35 } },
+    { type = "GuardPost", player = 2, at = { 53, 33 }, weapon = "RPG" },
+    { type = "GuardPost", player = 2, at = { 53, 36 }, weapon = "Laser" },
+    { type = "Tiger", player = 1, at = { 16, 52 }, weapon = "RailGun" },
+    { type = "Tiger", player = 1, at = { 16, 51 }, weapon = "RailGun" },
+    { type = "Tiger", player = 1, at = { 16, 50 }, weapon = "RailGun" },
+    { type = "Tiger", player = 1, at = { 16, 49 }, weapon = "RailGun" },
+    { type = "Tiger", player = 1, at = { 16, 48 }, weapon = "RailGun" },
+    { type = "Tiger", player = 1, at = { 13, 50 }, weapon = "ThorsHammer" },
   },
 
   beacons = {
@@ -55,8 +58,8 @@ return {
 
   -- Named regions referenced from mission.lua (point or { x0,y0, x1,y1 } rect).
   regions = {
-    spawn_point = { 62, 46 },
-    your_base   = { 7, 53, 17, 61 },
+    spawn_point = { 63, 50 },
+    your_base = { 2, 47, 18, 63 },
   },
 
   markers = {},

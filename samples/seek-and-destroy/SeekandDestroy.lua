@@ -1,13 +1,16 @@
--- Seek and Destroy  -  hunt down and destroy all enemy Guard Post outposts.
+-- Seek and Destroy  -  hunt down and destroy all enemy Guard Post's.
 -- op2-mission
 --
 -- placement.lua scatters 3 enemy Guard Posts (the targets) across the map, with markers.
 
 function on_init()
-  game.message("Seek and destroy all 3 enemy Guard Post outposts!")
-  game.sound("NewMissionObjective")
   game.morale_steady()
-
+  game.message("Seek and destroy all 3 enemy Guard Post outposts!")
+  
+  at_mark(1, function()
+    game.sound("NewMissionObjective")
+  end)
+  
   -- Progress: announce each outpost as it falls. Polling the count is reliable for buildings.
   local remaining = players[2]:unit_count("GuardPost")
   every(marks(2), function()
@@ -32,3 +35,4 @@ function on_init()
     mission.lose()
   end)
 end
+

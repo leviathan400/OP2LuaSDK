@@ -1,4 +1,4 @@
--- placement.lua  -  Strike Team  -  (hand-written sample; normally generated from a .opm)
+-- placement.lua  ──  Strike Team  ──  (hand-written sample; normally generated from a .opm)
 -- Your forward base + a strike force to the west; the enemy Command Center to the east.
 
 return {
@@ -19,24 +19,19 @@ return {
   },
 
   units = {
-    -- Your forward base (player 1)
-    { type = "CommandCenter", player = 1, at = { 10, 56 } },
-    { type = "Agridome",      player = 1, at = { 13, 56 } },
-    { type = "Tokamak",       player = 1, at = { 13, 58 } },
-    -- Your strike force (drive these east to the enemy base)
-    { type = "Tiger", player = 1, at = { 15, 53 }, weapon = "Microwave" },
-    { type = "Tiger", player = 1, at = { 16, 53 }, weapon = "Microwave" },
+    { type = "CommandCenter", player = 1, at = { 6, 60 } },
+    { type = "Agridome", player = 1, at = { 10, 60 } },
+    { type = "Tokamak", player = 1, at = { 16, 60 } },
+    { type = "Tiger", player = 1, at = { 15, 53 }, weapon = "Laser" },
+    { type = "Tiger", player = 1, at = { 16, 53 }, weapon = "Laser" },
     { type = "Tiger", player = 1, at = { 17, 53 }, weapon = "ThorsHammer" },
-    { type = "Lynx",  player = 1, at = { 15, 54 }, weapon = "Laser" },
-    { type = "Lynx",  player = 1, at = { 16, 54 }, weapon = "RPG" },
-
-    -- Enemy base (player 2) - destroy "enemy_cc" to win
-    { name = "enemy_cc", type = "CommandCenter", player = 2, at = { 59, 41 } },
-    { type = "Tokamak",   player = 2, at = { 61, 43 } },
-    { type = "GuardPost", player = 2, at = { 57, 39 }, weapon = "RPG" },
-    { type = "GuardPost", player = 2, at = { 61, 39 }, weapon = "Laser" },
-    { type = "Tiger",     player = 2, at = { 57, 43 }, weapon = "Microwave" },
-    { type = "Tiger",     player = 2, at = { 59, 44 }, weapon = "Microwave" },
+    { type = "Lynx", player = 1, at = { 15, 54 }, weapon = "Laser" },
+    { type = "Lynx", player = 1, at = { 16, 54 }, weapon = "RailGun" },
+    { name = "enemy_cc", type = "CommandCenter", player = 2, at = { 59, 36 } },
+    { type = "Tokamak", player = 2, at = { 61, 50 } },
+    { type = "GuardPost", player = 2, at = { 54, 36 }, weapon = "RPG" },
+    { type = "GuardPost", player = 2, at = { 54, 34 }, weapon = "Laser" },
+    { type = "Tiger", player = 2, at = { 56, 50 }, weapon = "Microwave" },
   },
 
   beacons = {
@@ -45,8 +40,9 @@ return {
   walls = {},
 
   regions = {
-    enemy_base = { 53, 35, 65, 47 },   -- around the enemy base (rect)
-    muster     = { 13, 51 },           -- where your reinforcements arrive (point)
+    enemy_base = { 50, 30, 64, 52 },
+    muster = { 13, 51 },
+    enemy_reinforcements = { 61, 26, 64, 28 },
   },
   markers = {},
 }

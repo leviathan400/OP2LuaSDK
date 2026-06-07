@@ -7,8 +7,11 @@ function on_init()
   game.morale_steady()
   game.message(("Escort the convoy (%d %s) east to the haven - keep it alive!")
                  :format(units["convoy"].cargo_amount, units["convoy"].cargo))
-  game.sound("NewMissionObjective")
-
+                 
+   at_mark(1, function()
+    game.sound("NewMissionObjective")
+  end)
+  
   -- Win when the convoy reaches the haven.
   when(function() return regions["haven"]:contains(units["convoy"]) end, function()
     game.message("The convoy reached the haven - mission accomplished!")
@@ -41,6 +44,6 @@ function on_init()
       for _, t in ipairs(a) do t:attack_move(units["convoy"]) end
     end)
   end
-  ambush(8, 3)
-  ambush(18, 4)
+  ambush(8, 2)
+  ambush(15, 3)
 end

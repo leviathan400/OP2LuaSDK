@@ -12,28 +12,29 @@ return {
   },
 
   units = {
-    -- Your strike force.
     { type = "Tiger", player = 1, at = { 15, 53 }, weapon = "ThorsHammer" },
-    { type = "Tiger", player = 1, at = { 16, 53 }, weapon = "Microwave" },
-    { type = "Lynx",  player = 1, at = { 15, 54 }, weapon = "Laser" },
-    { type = "Lynx",  player = 1, at = { 16, 54 }, weapon = "RPG" },
-    { type = "Lynx",  player = 1, at = { 17, 54 }, weapon = "Microwave" },
-    { type = "CommandCenter", player = 1, at = { 11, 56 } },
-    { type = "Tokamak",       player = 1, at = { 13, 57 } },
-    -- Three scattered, powered enemy outposts (each a Guard Post + a CC/Tokamak so it fires).
-    { type = "CommandCenter", player = 2, at = { 39, 39 } }, { type = "Tokamak", player = 2, at = { 41, 39 } },
-    { type = "GuardPost", player = 2, at = { 40, 41 }, weapon = "RPG" },
-    { type = "CommandCenter", player = 2, at = { 57, 41 } }, { type = "Tokamak", player = 2, at = { 59, 41 } },
-    { type = "GuardPost", player = 2, at = { 58, 43 }, weapon = "Laser" },
-    { type = "CommandCenter", player = 2, at = { 45, 55 } }, { type = "Tokamak", player = 2, at = { 47, 55 } },
-    { type = "GuardPost", player = 2, at = { 46, 57 }, weapon = "RPG" },
+    { type = "Tiger", player = 1, at = { 16, 53 }, weapon = "AcidCloud" },
+    { type = "Lynx", player = 1, at = { 15, 54 }, weapon = "Laser" },
+    { type = "Lynx", player = 1, at = { 16, 54 }, weapon = "Laser" },
+    { type = "Lynx", player = 1, at = { 17, 54 }, weapon = "RailGun" },
+    { type = "CommandCenter", player = 1, at = { 3, 60 } },
+    { type = "Tokamak", player = 1, at = { 3, 63 } },
+    { type = "CommandCenter", player = 2, at = { 37, 37 } },
+    { type = "GuardPost", player = 2, at = { 37, 39 }, weapon = "RPG" },
+    { type = "CommandCenter", player = 2, at = { 62, 50 } },
+    { type = "Tokamak", player = 2, at = { 59, 35 } },
+    { type = "GuardPost", player = 2, at = { 59, 49 }, weapon = "RPG" },
+    { type = "CommandCenter", player = 2, at = { 50, 57 } },
+    { type = "GuardPost", player = 2, at = { 47, 56 }, weapon = "RPG" },
   },
 
   beacons = {}, walls = {},
-  regions = { staging = { 13, 51 } },
+  regions = {
+    staging = { 13, 51 },
+  },
   markers = {
-    outpost1 = { type = "Circle", at = { 40, 41 } },
-    outpost2 = { type = "Circle", at = { 58, 43 } },
-    outpost3 = { type = "Circle", at = { 46, 57 } },
+    outpost1 = { type = "Circle", at = { 39, 39 } },
+    outpost2 = { type = "Circle", at = { 49, 54 } },
+    outpost3 = { type = "Circle", at = { 61, 52 } },
   },
 }

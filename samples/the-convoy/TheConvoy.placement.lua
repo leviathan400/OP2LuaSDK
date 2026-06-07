@@ -14,9 +14,10 @@ return {
   units = {
     -- Your convoy + escort (player 1). "convoy" must survive to the haven.
     { name = "convoy", type = "CargoTruck", player = 1, at = { 11, 55 }, cargo = "RareMetal", amount = 1000 },
-    { type = "Lynx", player = 1, at = { 10, 54 }, weapon = "Laser" },
-    { type = "Lynx", player = 1, at = { 12, 54 }, weapon = "RPG" },
-    { type = "Lynx", player = 1, at = { 11, 53 }, weapon = "Microwave" },
+    { type = "Lynx", player = 1, at = { 10, 53 }, weapon = "Laser" },
+    { type = "Lynx", player = 1, at = { 11, 53 }, weapon = "ThorsHammer" },
+    { type = "Lynx", player = 1, at = { 10, 54 }, weapon = "ThorsHammer" },
+    { type = "Lynx", player = 1, at = { 11, 54 }, weapon = "RailGun" },
     { type = "CommandCenter", player = 1, at = { 9, 57 } },
     { type = "Tokamak",       player = 1, at = { 12, 58 } },
     -- A couple of enemy units lurking on the route (more ambush via the script).

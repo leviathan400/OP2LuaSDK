@@ -12,24 +12,22 @@ return {
   },
 
   units = {
-    -- Your force, staged just west of the hill.
-    { type = "Tiger", player = 1, at = { 27, 51 }, weapon = "Microwave" },
-    { type = "Tiger", player = 1, at = { 28, 51 }, weapon = "Microwave" },
-    { type = "Lynx",  player = 1, at = { 27, 52 }, weapon = "Laser" },
-    { type = "Lynx",  player = 1, at = { 28, 52 }, weapon = "RPG" },
-    { type = "CommandCenter", player = 1, at = { 13, 56 } },
-    { type = "Tokamak",       player = 1, at = { 15, 57 } },
-    -- Enemy base to the east, attacks the hill.
-    { type = "CommandCenter", player = 2, at = { 59, 41 } },
-    { type = "Tokamak",       player = 2, at = { 61, 42 } },
-    { type = "GuardPost",     player = 2, at = { 57, 43 }, weapon = "RPG" },
+    { type = "Tiger", player = 1, at = { 27, 51 }, weapon = "ThorsHammer" },
+    { type = "Tiger", player = 1, at = { 28, 51 }, weapon = "ThorsHammer" },
+    { type = "Lynx", player = 1, at = { 27, 52 }, weapon = "Laser" },
+    { type = "Lynx", player = 1, at = { 28, 52 }, weapon = "RailGun" },
+    { type = "CommandCenter", player = 1, at = { 9, 60 } },
+    { type = "Tokamak", player = 1, at = { 4, 58 } },
+    { type = "CommandCenter", player = 2, at = { 58, 35 } },
+    { type = "Tokamak", player = 2, at = { 59, 27 } },
+    { type = "GuardPost", player = 2, at = { 53, 35 }, weapon = "RPG" },
   },
 
   beacons = { { type = "MiningBeacon", ore = "Common", at = { 35, 49 } } },  -- the hill's beacon
   walls = {},
   regions = {
-    hill        = { 31, 47, 39, 53 },  -- control this
-    enemy_spawn = { 55, 43 },
+    hill = { 31, 45, 45, 53 },
+    enemy_spawn = { 48, 35 },
   },
   markers = {},
 }
