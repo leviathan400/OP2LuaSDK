@@ -4,12 +4,12 @@
 
 OP2LuaSDK is everything you need to **make your own Outpost 2 missions** in Lua. You do not build
 or compile anything - the runtime (`OP2LuaCore.dll`) is prebuilt and included. You write two small
-text files and you have a mission.
+(or large) text files and you have a mission.
 
-| File | What it is | Who writes it |
-|---|---|---|
-| `placement.lua` | The **nouns** - players, starting units, resources, beacons, named regions. The starting layout. | you (or OP2MissionEditor) |
-| `mission.lua` | The **verbs** - what happens during the mission (timers, attack waves, win/lose, reactions). | you |
+| File | What it is |
+|---|---|
+| `cMyMission.placement.lua` | Players, starting units, resources, beacons, named regions. The starting layout. |
+| `cMyMission.lua` | What happens during the mission (timers, attack waves, win/lose, reactions). |
 
 That is the whole job: edit Lua, drop the files in the game, play. Missions are
 **multiplayer-safe by construction** (see [`docs/API.md`](docs/API.md)).
@@ -68,6 +68,14 @@ read them - the same numbers OP2MissionEditor shows):
 ```
 
 No offsets to remember - type what you see, the unit lands there.
+
+---
+
+## OP2LuaEditor
+
+A visual editor for building mission layouts. Load a map as the backdrop, place units, draw regions, set mission properties, and save it straight to placement.lua. It also scaffolds new missions (clones + names the stub DLL) so you can go from blank to playable without touching a compiler.
+
+![Screenshot](https://images.outpostuniverse.org/OP2LuaEditor.png)
 
 ---
 
