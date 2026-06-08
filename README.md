@@ -92,5 +92,9 @@ short read at the bottom of [`docs/API.md`](docs/API.md).
 
 - **Full API:** [`docs/API.md`](docs/API.md)
 - **Tutorial:** [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md)
+- **Place layouts visually:** [OP2MissionEditor](https://github.com/leviathan400/OP2MissionEditor) -
+  load a map and drag units/structures/beacons/regions into place, then save an `.opm`.
+- **Convert `.opm` -> `placement.lua`:** [OP2OpmTools](https://github.com/leviathan400/OP2OpmTools) -
+  turns a saved `.opm` into a mission's `placement.lua`.
 - **The engine itself** (building `OP2LuaCore.dll`, internals): the separate **OP2Lua** repo.
   You don't need it to make missions.
