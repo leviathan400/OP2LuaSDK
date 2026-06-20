@@ -28,12 +28,19 @@ OP2LuaSDK/
   docs/
     API.md                  - the full mission scripting API reference
     GETTING-STARTED.md      - write your first mission, step by step
-  samples/                  - five complete, commented missions to play and learn from
+    LOGGING.md              - the logging/debug standard (Main / Mission / AI logs, in-game AI events)
+  samples/                  - complete, commented missions to play and learn from
     hold-the-line/          - DEFENSE: survive escalating waves
     strike-team/            - OFFENSE: destroy the enemy Command Center
     the-convoy/             - ESCORT: get a cargo truck to safety
     hold-the-beacon/        - CONTROL: hold a region for a set time
     seek-and-destroy/       - HUNT: destroy scattered enemy outposts
+    cold-front/             - COLONY: build, survive a volcanic eruption, evacuate to the starship
+                              (living AI base, lava disaster, difficulty, starship victory; see its README.md)
+    cataclysm/              - SURVIVAL: keep your Command Center standing through every disaster type
+                              (meteor, quake, storm, vortex, eruption, blight) on eden01.map
+    disaster-director/      - HELPER: a copy-paste random/weighted disaster scheduler (meteor, quake,
+                              storm, vortex, lava, blight) with base-targeting and a min-gap timer
   tools/
     op2lua-newmission.exe   - scaffold a new named mission, Windows (DLL + skeleton scripts)
     op2lua-newmission       - the same tool, prebuilt for Linux (x86-64, static). `chmod +x` it.
