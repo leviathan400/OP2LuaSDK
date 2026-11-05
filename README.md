@@ -111,7 +111,7 @@ short read at the bottom of [`docs/API.md`](docs/API.md).
 ## License
 
 The SDK (docs, samples, tools and runtime) is released under the [MIT License](LICENSE) -
-Copyright © 2026 Leviathan. Missions you write with it are yours.
+Copyright © 2026 Outpost Universe. Missions you write with it are yours.
 
 `OP2LuaCore.dll` includes Lua, sol2 and Tethys; their licenses are in
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
