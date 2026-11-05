@@ -142,7 +142,7 @@ log names the file and line. **Always check the log first** when something doesn
 
 ## 7. Learn from the samples
 
-The five missions in `samples/` are short and commented - each demonstrates a different style:
+The missions in `samples/` are commented - each demonstrates a different style:
 
 | Sample | Teaches |
 |---|---|
@@ -151,6 +151,8 @@ The five missions in `samples/` are short and commented - each demonstrates a di
 | `the-convoy` | escort logic, `region:contains`, cargo trucks, reactive enemies |
 | `hold-the-beacon` | holding a region over time, a progress counter |
 | `seek-and-destroy` | `player:unit_count`, multi-target progress |
+| `cold-front` | a full scripted-AI colony, a volcanic-eruption disaster, difficulty, the starship victory, the logging standard (has its own `README.md`) |
+| `cataclysm` | every disaster type via the disaster director, on `eden01.map` |
 
 Copy one, rename it, and tweak. That's the fastest way to learn.
 

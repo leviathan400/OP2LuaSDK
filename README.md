@@ -105,3 +105,15 @@ short read at the bottom of [`docs/API.md`](docs/API.md).
   turns a saved `.opm` into a mission's `placement.lua`.
 - **The engine itself** (building `OP2LuaCore.dll`, internals): the separate **OP2Lua** repo.
   You don't need it to make missions.
+
+---
+
+## License
+
+The SDK (docs, samples, tools and runtime) is released under the [MIT License](LICENSE) -
+Copyright (c) 2026 Leviathan. Missions you write with it are yours.
+
+`OP2LuaCore.dll` includes Lua, sol2 and Tethys; their licenses are in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+Outpost 2 is (c) 1997 Activision Publishing, Inc. This project is not made or supported by Activision.

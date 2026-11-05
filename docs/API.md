@@ -125,6 +125,8 @@ as a raw integer SoundID.
 | `game.create_tornado(from, to, duration [, now])` | Vortex along a path. |
 | `game.create_blight(at [, spreadSpeed])` / `game.unset_blight(at)` | Add / remove the Blight. |
 | `game.set_lava_speed(n)` / `game.set_blight_speed(n)` | Spread speeds. |
+| `game.set_lava_possible(area [, on])` | Mark tiles as lava-passable so an eruption's flow can reach them (carve a channel). `on` defaults to true. |
+| `game.disasters_enabled()` | Whether disasters are enabled for this game. Returns **false** in Colony Games (no disasters toggle there - only Difficulty), so a colony mission that wants disasters must call them directly / force its director. Reflects the host's real choice in multiplayer/skirmish. |
 | `game.set_daylight_everywhere(on)` / `game.set_daylight_moves(on)` | Full daylight / day-night cycle. |
 
 ## mission.*
@@ -239,10 +241,15 @@ Cargo can also be set in placement: `{ type="CargoTruck", ..., cargo="RareMetal"
 | `player.ore` / `player.rare_ore` / `player.food` | Stored resources (get or set). |
 | `player.kids` / `player.workers` / `player.scientists` | Population by type (get or set). |
 | `player.population` | Total colonists (read-only). |
+| `player.difficulty` | The Colony Games menu difficulty as `"Easy"`/`"Normal"`/`"Hard"` (read-only). Read it off the human player to self-tune a mission per difficulty. |
+| `player:satellite_count(type)` | How many of a satellite or launched Spaceport cargo rocket the player has - e.g. `"EDWARDSatellite"`, `"RareMetalsCargo"`, `"CommonMetalsCargo"`, `"FoodCargo"`, `"EvacuationModule"`. Drives Starship-colony evacuation victories. |
 
 ```lua
 players[2].ore = players[2].ore + 5000        -- grant the AI a stockpile
 if players[1].workers < 10 then ... end        -- read a resource
+
+local diff = players[1].difficulty             -- "Easy" / "Normal" / "Hard"
+if diff == "Hard" then players[2].ore = 6000 end
 ```
 
 **Technology, alliances, faction**
@@ -318,17 +325,42 @@ A few things are about Outpost 2 itself, not OP2Lua - worth knowing:
   treated as enemies even though they exist.
 - **Command units the tick after creation, not the same tick.** Handled automatically - `move`/
   `attack_move` are deferred one tick - so you can write the obvious thing.
+- **One command per unit per tick.** A unit keeps only the *last* command issued in a given tick. So
+  `u:move(a); u:move(b)` in one tick only does `b`. (Producing one unit at *each of several* factories
+  in the same tick is fine - different units.)
+- **A factory has no build queue.** A `produce()` issued while the factory is still building the
+  previous unit is **dropped** (not queued). Spacing onto a different *tick* isn't enough - you must
+  space produce calls by **≥ the unit's build time** (~12-15 marks for a vehicle). Use a counter loop,
+  one unit per `every(marks(15))` cycle until you've made the target count.
+- **`attack_move` to an empty tile sieges the ground.** For waypoint travel where there may be no enemy
+  at the destination, use `move` - otherwise the unit attacks the bare tile on arrival. Use
+  `attack_move` only when you want it to engage whatever it meets en route.
 
 ## Logs
 
-Two files in `Outpost2\OPU\logs\`:
+Up to three files in `Outpost2\OPU\logs\`, each line stamped with the wall-clock time AND the game
+mark (e.g. `02:45:05 m260 [INFO] ...`). Nothing is duplicated between them:
 
-- **`OP2Lua-<MissionDll>.log`** - *your* mission's log. Your `print(...)` debug, the messages and
-  units it spawns, plus the core context for that run. This is where you look while building a mission.
-- **`OP2Lua.log`** - the shared master log: core/engine lifecycle and any errors, across every
-  mission you play. Your `print()` output is **not** here, so it stays a clean engine record.
+- **`OP2Lua-<MissionDll>.log`** - *your* mission's log: your `print(...)` / `log.mission(...)` debug,
+  `game.message` calls, mission errors, and the FULL crash dump. Where you look while building a mission.
+- **`OP2Lua-<MissionDll>-AI.log`** - a scripted AI's debug stream, written by **`log.ai(...)`**. Lets
+  you monitor/debug just the AI in isolation. Created lazily, so a mission that never calls `log.ai`
+  makes no AI file.
+- **`OP2Lua.log`** - the shared Main log: framework lifecycle (mission load/end, version, map) and a
+  one-line crash summary, across every mission. Mission/AI output is **not** here, so it stays a clean
+  framework record.
 
-Errors (script errors, crashes) appear in **both**, so a failure is never hidden.
+| Logging call | Goes to |
+|---|---|
+| `print(...)` / `log.mission(...)` | the Mission log |
+| `log.ai(...)` | the AI log (+ comms panel if `log.show_ai_in_game(true)`) |
+| `log.show_ai_in_game(on)` | toggle echoing `log.ai` lines to the in-game comms panel (off by default) |
+| `log.ai_status(player)` | (over)writes `OP2Lua-<dll>-AI-status.json` with that player's current resources + unit counts. Call from `every(marks(1), ...)` for a live feed an external tool can poll. |
+
+A crash writes a one-line summary to the Main log and the full register/stack dump to the Mission log,
+so a failure is never hidden but the noise stays in one place.
+
+See **[`LOGGING.md`](LOGGING.md)** for the full logging/debug standard every mission should follow.
 
 ## Multiplayer safety (read once, then forget)
 

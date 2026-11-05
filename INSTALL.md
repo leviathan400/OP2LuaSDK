@@ -4,7 +4,7 @@
 
 ## Install (the easy way)
 
-Extract **`OP2LuaSDK_v0.6.0.zip`** straight into your Outpost 2 install folder (the one with
+Extract **`OP2LuaSDK_v0.6.12.zip`** straight into your Outpost 2 install folder (the one with
 `Outpost2.exe`). It's laid out to drop everything into place:
 
 ```

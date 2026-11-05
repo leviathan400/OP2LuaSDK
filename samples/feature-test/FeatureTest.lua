@@ -139,7 +139,7 @@ end
 -- ---- unit event callbacks ----
 function on_create_unit(unit)  print("on_create_unit: "  .. unit.type .. " (player " .. unit.owner .. ")") end
 function on_destroy_unit(unit) print("on_destroy_unit: " .. unit.type .. " (player " .. unit.owner .. ")") end
-function on_damage_unit(unit)  end   -- fires constantly in combat; defined to prove it routes, kept quiet
+function on_damage_unit(unit)  end   -- OnDamageUnit needs OPU mod 1.4.2+ (won't fire on 1.4.0/1.4.1); routes, kept quiet
 
 -- ---- chat callback (chat.text read/write, chat.player) ----
 function on_chat(chat)
