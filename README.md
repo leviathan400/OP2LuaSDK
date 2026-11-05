@@ -111,9 +111,10 @@ short read at the bottom of [`docs/API.md`](docs/API.md).
 ## License
 
 The SDK (docs, samples, tools and runtime) is released under the [MIT License](LICENSE) -
-Copyright (c) 2026 Leviathan. Missions you write with it are yours.
+Copyright © 2026 Leviathan. Missions you write with it are yours.
 
 `OP2LuaCore.dll` includes Lua, sol2 and Tethys; their licenses are in
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Outpost 2 is (c) 1997 Activision Publishing, Inc. This project is not made or supported by Activision.
+*Outpost 2: Divided Destiny* © 1997 Dynamix / Sierra On-Line (rights now held by Activision).
+This project is not made or supported by Dynamix, Sierra or Activision.
