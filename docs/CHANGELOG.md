@@ -2,6 +2,29 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [Unreleased] - multiplayer missions
+
+### Added
+
+- **Multiplayer missions:** `op2lua-newmission --type` (e.g. `LastOneStanding`), the lobby's settings
+  (`game.initial_units()`, `game.uses_day_night()`, `game.uses_morale()`), `mission.last_one_standing()`,
+  `game.create_beacon{...}`, `game.set_initial_light_level(n)` and `create_unit{..., exact = true}`.
+  See "Multiplayer missions" in [`API.md`](API.md).
+- **Triggers and victory conditions:** `trigger.count/resource/set/midas/one_player_left/operational/
+  vehicle_count/building_count{...}` with an optional `on` function, and `mission.victory` /
+  `mission.failure`: the wins of Space Race, Resource Race, Midas and Land Rush. See "trigger.*" in
+  [`API.md`](API.md).
+- **`tug-o-war` sample:** 2-player Last One Standing, a remake of the stock `ml2_31.dll` with its lobby
+  settings, random starts and disasters.
+
+### Changed
+
+- **`nostalgia` sample** is now the multiplayer map it was meant to grow into: 2-4 players, Last One
+  Standing, a remake of `ml4_43.dll` (OPU's Nostalgia). The old 2-player colony version is gone; its DLL
+  had the `c` prefix, the new one (`NostalgiaLua.dll`) has none and lists in the multiplayer lobby.
+- `bin/OP2LuaCore.dll` and `tools/op2lua-newmission.exe` rebuilt with multiplayer support.
+- `game.free_morale(player)` takes a Player or a 1-based number, like the rest of the API.
+
 ## [0.7.0] - 2026-11-05
 
 ### Added

@@ -39,12 +39,15 @@ OP2LuaSDK/
                               (living AI base, lava disaster, difficulty, starship victory; see its README.md)
     cataclysm/              - SURVIVAL: keep your Command Center standing through every disaster type
                               (meteor, quake, storm, vortex, eruption, blight) on eden01.map
+    tug-o-war/              - MULTIPLAYER: 2-player Last One Standing, a remake of the stock ml2_31.dll
+                              (lobby settings, random starts, disasters; see its README.md)
     disaster-director/      - HELPER: a copy-paste random/weighted disaster scheduler (meteor, quake,
                               storm, vortex, lava, blight) with base-targeting and a min-gap timer
   tools/
     op2lua-newmission.exe   - scaffold a new named mission, Windows (DLL + skeleton scripts)
     op2lua-newmission       - the same tool, prebuilt for Linux (x86-64, static). `chmod +x` it.
-    new-mission.ps1         - the same scaffolder as a PowerShell script (Windows)
+                              (Not yet rebuilt with --type: multiplayer missions need the .exe for now.)
+    new-mission.ps1         - the same scaffolder as a PowerShell script (Windows; Colony missions only)
                               (macOS / other: build from source - op2lua-newmission/ in the OP2Lua repo)
 ```
 

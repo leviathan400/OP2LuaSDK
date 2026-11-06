@@ -49,7 +49,8 @@ all three files for you.
 | `cold-front/` | **Cold Front** | *Reference mission* - an Eden colony beside a living Plymouth AI on `on1_01.map`, with a volcano threatening your ground; evacuate to orbit via the starship. The fullest showcase (economy AI + disasters + starship victory). Has its own [`README`](cold-front/README.md). |
 | `plymouth-cold-war-clone/` | **Plymouth Cold War (Lua clone)** | A faithful Lua port of the classic C++ mission - destroy the entrenched Plymouth Advanced Lab on `eden03.map`. |
 | `ai-sandbox/` | **AI Sandbox** | Human colony vs. an **autonomous economy AI** on the 4-corner "Nostalgia" layout - the testbed for the scripted computer player. |
-| `nostalgia/` | **Nostalgia** | Last colony standing vs. an *idle* computer colony on the 4-corner layout (ported from the classic C++ mission data). |
+| `nostalgia/` | **Nostalgia (Lua)** | *Multiplayer* - 2-4 players, Last One Standing on `opu_02.map`: a base in each corner, given out at random. A remake of `ml4_43.dll` (OPU's Nostalgia). Has its own [`README`](nostalgia/README.md). |
+| `tug-o-war/` | **Tug-O-War (Lua)** | *Multiplayer* - the first multiplayer OP2Lua mission: a remake of the stock 2-player Last One Standing map `ml2_31.dll`, with the lobby's settings and disasters. Its DLL has no `c` prefix: OP2 lists it in the multiplayer lobby. Has its own [`README`](tug-o-war/README.md). |
 
 ## Not a mission
 
