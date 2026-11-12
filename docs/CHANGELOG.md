@@ -14,8 +14,17 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
   vehicle_count/building_count{...}` with an optional `on` function, and `mission.victory` /
   `mission.failure`: the wins of Space Race, Resource Race, Midas and Land Rush. See "trigger.*" in
   [`API.md`](API.md).
+- **Time and research triggers:** `trigger.time{...}`, `trigger.research{...}` and `Trigger:destroy()`, for
+  the stock multiplayer missions' disasters (each one ends the trigger that fired and makes the next).
+- **`game.tile(at)` and `game.set_tile(at, index)`:** read and change a tile's graphic (its tile mapping
+  index), for lava maps that swap in volcano tiles before an eruption.
+- **The game's AI groups:** `ai.building_group/fight_group/mining_group(player)`, `ai.unit_block{...}` and
+  `player:set_default_group(group)`: a computer player's base that the game rebuilds, mines for and guards,
+  as the stock Peacekeeper and La Corrida set theirs up. See "ai.*" in [`API.md`](API.md).
 - **`tug-o-war` sample:** 2-player Last One Standing, a remake of the stock `ml2_31.dll` with its lobby
   settings, random starts and disasters.
+- **`unit:develop(type)`** (a Spaceport builds a rocket or its cargo, e.g. `"EMPMissile"`) and
+  **`player:default_group()`** (the game's own default group), for the stock auto demos.
 
 ### Changed
 
@@ -24,6 +33,9 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
   had the `c` prefix, the new one (`NostalgiaLua.dll`) has none and lists in the multiplayer lobby.
 - `bin/OP2LuaCore.dll` and `tools/op2lua-newmission.exe` rebuilt with multiplayer support.
 - `game.free_morale(player)` takes a Player or a 1-based number, like the rest of the API.
+- `unit.busy` is the game's own `Unit::IsBusy`: true while the unit has a command. It went false while
+  a Spaceport was still building.
+- `ai.unit_block` records get the classification the stock missions' tables have (`NotSet`).
 
 ## [0.7.0] - 2026-11-05
 
