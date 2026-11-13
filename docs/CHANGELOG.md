@@ -25,6 +25,11 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
   settings, random starts and disasters.
 - **`unit:develop(type)`** (a Spaceport builds a rocket or its cargo, e.g. `"EMPMissile"`) and
   **`player:default_group()`** (the game's own default group), for the stock auto demos.
+- **`game.initial_set_tile(at, index)` and `game.set_cell_type(at, type)`**: a setup's own map edits
+  (the stock tutorials').
+- **Placement beacons with `after = n`**: made once `n` of the placement's units are made, so the units
+  keep the object ids of a setup that made the beacon between them. Without it, beacons come first.
+- **The weapon name `"EnergyCannon"`** (the Scorpion's).
 
 ### Changed
 
