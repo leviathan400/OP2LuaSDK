@@ -6,6 +6,11 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ### Added
 
+- **For computer-player scripts (read-only):** `player:cost(type [, weapon])`, `player.power`, `player.food_net`,
+  `game.tech(id)`, `player:can_research(id)`, `beacon:surveyed_by(player)`, and what a unit was told to do read back:
+  `unit.research_topic`, `unit.producing` / `unit.progress`, `unit.target`. They change nothing, so they are safe in
+  multiplayer games. `game.footprint` reads a structure's size from its type, so it answers right on small maps.
+  See [`API.md`](API.md).
 - **Multiplayer missions:** `op2lua-newmission --type` (e.g. `LastOneStanding`), the lobby's settings
   (`game.initial_units()`, `game.uses_day_night()`, `game.uses_morale()`), `mission.last_one_standing()`,
   `game.create_beacon{...}`, `game.set_initial_light_level(n)` and `create_unit{..., exact = true}`.
