@@ -30,6 +30,20 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 - **Placement beacons with `after = n`**: made once `n` of the placement's units are made, so the units
   keep the object ids of a setup that made the beacon between them. Without it, beacons come first.
 - **The weapon name `"EnergyCannon"`** (the Scorpion's).
+- **For the stock colony games' trigger functions:** `game.units_in_range`, `game.units_in_rect`,
+  `game.rand_point`, the player's `reset_checks`/`can_build_*`/`can_accumulate_*`/`total_strength`,
+  `group:set_patrol` and `ai.unit_block`'s `classification` field. See [`API.md`](API.md).
+- **For their computer players:** `block:create_units(player [, lights])` (a mission's exported unit
+  table, as the game makes it), `game.message_at(...)` (a message pointing at a spot) and raw
+  locations, `{ x =, y =, raw = true }` (the game's own tile, as a stock mission passes one off the
+  map). See [`API.md`](API.md).
+- **For the campaign missions:** `trigger.escape/kit/point/rect/evac/damaged`, a number for `trigger.count`'s
+  `cargo`, `unit:infect()`, `unit.occupied_bay`, `unit.is_discovered`, `unit:set_damage`, `unit:set_opp_fired_upon`,
+  `player:can_do_research`, `group:set_targ_counts`, `game.create_emp_missile`, `game.wreckage()` and
+  `trigger.special_target`; `game.rand(0)`
+  draws as the game's GetRand does, and a point off the map isn't wrapped onto it. See [`API.md`](API.md).
+- **For CES1's attack waves:** `player:buildings`, `group:take_all_units`, `unit.object_on_pad`,
+  `unit:launch_at_pixel` and `game.find_emp_missile_target`. See [`API.md`](API.md).
 
 ### Changed
 
