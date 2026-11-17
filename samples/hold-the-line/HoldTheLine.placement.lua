@@ -2,13 +2,14 @@
 --
 -- This file is produced by OP2MissionEditor (exported from the .opm). It is pure
 -- data: where everything starts. The OP2Lua runtime reads this table and applies
--- it before running mission.lua. Coordinates are already in engine space (the
--- converter applied the +31 / -1 offset), and unit defaults are filled in.
+-- it before running mission.lua. Coordinates are the in-game status-bar ones
+-- (the runtime converts them to the game's own grid), and unit defaults are filled in.
+-- Every key is described in the SDK's docs/FILE-FORMAT.md.
 --
 -- Hand edits will be lost on the next export. Put logic in mission.lua instead.
 
 return {
-  -- Mission-list metadata (read during the list scan to fill OP2's DescBlock).
+  -- Mission-list metadata, for the tools. The game reads these from cHoldtheLine.dll.
   name     = "Hold the Line",
   map      = "eden01.map",
   tech     = "MULTITEK.TXT",

@@ -2,6 +2,19 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [Unreleased]
+
+### Added
+
+- `docs/FILE-FORMAT.md`: the mission files - every `placement.lua` key, the mission DLL's settings, how the files are
+  found.
+
+### Fixed
+
+- Placement takes `at = { x =, y = }` and the game's own tile, `{ x =, y =, raw = true }`, as script calls do (needs
+  the next `bin/OP2LuaCore.dll`).
+- The Hold the Line sample's placement comment said its coordinates were the game's own; they are status-bar ones.
+
 ## [0.7.6] - 2026-11-17
 
 ### Changed

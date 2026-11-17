@@ -78,18 +78,19 @@ does `op2lua-newmission` (`--map`, `--type`, `--players`) for a new mission.
 
 ## Coordinates
 
-Every coordinate in a placement file is a **status-bar coordinate**: the numbers Outpost 2 shows for the tile
+A coordinate in a placement file is a **status-bar coordinate**: the numbers Outpost 2 shows for the tile
 under the mouse, 1-based, the ones OP2MissionEditor and OP2LuaEditor show too. The core converts them to the
 game's own grid (which has a hidden 32-tile margin on maps narrower than 512) when it applies the placement.
 
 | Form | Meaning |
 |---|---|
-| `{ x, y }` | A tile. |
+| `{ x, y }` or `{ x =, y = }` | A tile. |
+| `{ x =, y =, raw = true }` | The game's own tile (0-based, with the hidden margin), used as it is: a stock mission's tile off the map, say. Not for regions. |
 | `{ x1, y1, x2, y2 }` | A rectangle, both corners included (regions only). The corners may come in either order. |
 
-The conversion wraps: a coordinate past the edge lands on the other side of the map (x by the map's width
-mask, y by its height). Placement entries take only the array form above; the form `{ x =, y =, raw = true }`
-(the game's own tile, unconverted) is understood by script calls (see API.md, Coordinates), not by placement.
+The conversion of a status-bar tile wraps: a coordinate past the edge lands on the other side of the map (x by
+the map's width mask, y by its height). A raw tile isn't converted, so it isn't wrapped either. (Script calls
+don't wrap status-bar tiles; see API.md, Coordinates.)
 
 ## `<Mission>.placement.lua`
 
