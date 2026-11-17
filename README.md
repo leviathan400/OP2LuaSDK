@@ -27,6 +27,7 @@ OP2LuaSDK/
     LuaMission.dll          - the mission stub template (used by the new-mission tools)
   docs/
     API.md                  - the full mission scripting API reference
+    FILE-FORMAT.md          - the mission files: placement.lua keys, the mission DLL's settings
     GETTING-STARTED.md      - write your first mission, step by step
     LOGGING.md              - the logging/debug standard (Main / Mission / AI logs, in-game AI events)
   samples/                  - complete, commented missions to play and learn from
@@ -101,6 +102,7 @@ short read at the bottom of [`docs/API.md`](docs/API.md).
 ## Misc
 
 - **Full API:** [`docs/API.md`](docs/API.md)
+- **Mission files:** [`docs/FILE-FORMAT.md`](docs/FILE-FORMAT.md)
 - **Tutorial:** [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md)
 - **Place layouts visually:** [OP2MissionEditor](https://github.com/leviathan400/OP2MissionEditor) -
   load a map and drag units/structures/beacons/regions into place, then save an `.opm`.
