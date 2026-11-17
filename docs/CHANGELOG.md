@@ -4,8 +4,19 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased] - multiplayer missions
 
+### Fixed
+
+- `region:center()` returns the centre in the same coordinates as `unit.x`/`unit.y`, so it goes straight to `at =`
+  (it returned the game's internal ones, about 32 tiles off on a normal map).
+- `unit.progress` is nil whenever `unit.producing` is.
+- `game.footprint` and `game.find_build_site` return nil for a type that isn't a structure.
+
 ### Added
 
+- `player.ore_capacity` and `player.rare_ore_capacity` (read-only): how much ore the colony can store; the game caps
+  `player.ore` / `player.rare_ore` at them, so ore beyond them is lost. See [`API.md`](API.md).
+- API.md: ore set by a script or a placement beyond the colony's storage is lost at the next colony update (every
+  256 ticks, the first at the start); a Storage holds 5000, a smelter 10000, a Command Center none. Build storage first.
 - **For computer-player scripts (read-only):** `player:cost(type [, weapon])`, `player.power`, `player.food_net`,
   `game.tech(id)`, `player:can_research(id)`, `beacon:surveyed_by(player)`, and what a unit was told to do read back:
   `unit.research_topic`, `unit.producing` / `unit.progress`, `unit.target`. They change nothing, so they are safe in

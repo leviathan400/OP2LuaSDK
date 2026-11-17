@@ -106,8 +106,8 @@ as a raw integer SoundID.
 | `game.cell(x, y)` | Read a tile: `{ passable, cliff, lava, blocked, type }` (terrain + whether a wall/building occupies it). |
 | `game.can_place(x, y)` | Is a structure tile buildable here? (passable, not occupied, not lava). |
 | `game.find_place(near, type)` | `{x,y}` of a clear spot near `near` (a `Unit`/`Region`/`{x,y}`) to place `type`, or nil. |
-| `game.find_build_site(type, from [, maxR])` | `{x,y}` build anchor near `from` where the **whole footprint** (incl. clearance) is buildable, or nil. Feed straight to `unit:build`. |
-| `game.footprint(type)` | `{ w, h, tw, th }` - a structure's core size and total size (with the 1-tile build border). |
+| `game.find_build_site(type, from [, maxR])` | `{x,y}` build anchor near `from` where the **whole footprint** (incl. clearance) is buildable, or nil (also for a type that isn't a structure). Feed straight to `unit:build`. |
+| `game.footprint(type)` | `{ w, h, tw, th }` - a structure's core size and total size (with the 1-tile build border); nil for a type that isn't a structure. |
 
 > With these the AI reads its surroundings (`beacons` for mines, `cell`/`can_place` for terrain,
 > `find_build_site`/`footprint` for placement) instead of being told where things are - drop it on any
@@ -381,7 +381,7 @@ Cargo can also be set in placement: `{ type="CargoTruck", ..., cargo="RareMetal"
 | `player.is_eden` / `player.is_plymouth` | Faction. |
 | `player.is_human` / `player.is_ai` | Control. |
 | `player:owns_any(type)` | `true` if the player owns >=1 unit of `type`. |
-| `player:reset_checks()`, `player:can_build_building()`, `can_build_vehicle([arg])` (the stock missions pass 1), `can_build_space()`, `can_accumulate_ore()`, `can_accumulate_rare_ore()`, `can_do_research(tech)` | The game's own checks of what the colony can still do (the stock colony games fail a colony that can't). The game caches them: call `reset_checks()` first. |
+| `player:reset_checks()`, `player:can_build_building()`, `can_build_vehicle([arg])` (the stock missions pass 1), `can_build_space()`, `can_accumulate_ore()`, `can_accumulate_rare_ore()`, `can_do_research(tech)` | The game's own checks of what the colony can still do (the stock colony games fail a colony that can't). The game caches them: call `reset_checks()` first. `can_do_research` is false for a tech id the game doesn't have. |
 | `player:total_strength()` | The game's measure of the player's military (`GetTotalPlayerStrength`). |
 | `player:unit_count(type)` | Count of that type. |
 | `player:units([type])` | List of the player's units (all, or filtered to one `type`) - order them as a group. |
@@ -391,11 +391,12 @@ Cargo can also be set in placement: `{ type="CargoTruck", ..., cargo="RareMetal"
 
 | Member | |
 |---|---|
-| `player.ore` / `player.rare_ore` / `player.food` | Stored resources (get or set). |
+| `player.ore` / `player.rare_ore` / `player.food` | Stored resources (get or set). The game caps a colony's ore at its storage capacity (each Common or Rare Storage holds 5000 of its kind, each Common or Rare Ore Smelter 10000; a Command Center holds none), so ore set, by a script or a placement's `common_ore` / `rare_ore`, beyond what the colony can store is lost at the colony's next update (every 256 ticks, the first at the start); build the storage first (`player.ore_capacity`). |
 | `player.kids` / `player.workers` / `player.scientists` | Population by type (get or set). |
 | `player.population` | Total colonists (read-only). |
 | `player.power` | Spare power (read-only): what the colony generates less what its working structures use, as the game's last update left it. |
 | `player.food_net` | The food stored's change over the colony's last food update (read-only; the game updates food every 256 ticks). Negative: the colony eats more than it grows. |
+| `player.ore_capacity` / `player.rare_ore_capacity` | How much common and rare ore the colony can store (read-only), as the game's last update worked it out; the game cuts `player.ore` / `player.rare_ore` down to these at each colony update (every 256 ticks). |
 | `player:cost(type [, weapon])` | What `type` costs this player's colony, `{ common =, rare = }` (ore), with a turret `weapon`'s cost added for a vehicle or Guard Post; nil for an unknown type. Research that changes a cost is included. |
 | `player.difficulty` | The Colony Games menu difficulty as `"Easy"`/`"Normal"`/`"Hard"` (read-only). Read it off the human player to self-tune a mission per difficulty. |
 | `player:satellite_count(type)` | How many of a satellite or launched Spaceport cargo rocket the player has - e.g. `"EDWARDSatellite"`, `"RareMetalsCargo"`, `"CommonMetalsCargo"`, `"FoodCargo"`, `"EvacuationModule"`. Drives Starship-colony evacuation victories. |
@@ -427,7 +428,7 @@ if diff == "Hard" then players[2].ore = 6000 end
 |---|---|
 | `region:units(player?)` | Units inside the region (optionally filtered to a player). |
 | `region:contains(unit)` | Is the unit inside? |
-| `region:center()` | `{x=,y=}` center tile. |
+| `region:center()` | `{x=,y=}` center tile, in the same coordinates as `unit.x`/`unit.y` (goes straight to `at =`). |
 
 A `Region` can also be passed directly anywhere a location is expected (`at = regions["x"]`,
 `unit:attack_move(regions["x"])`) - its center is used.
