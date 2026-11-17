@@ -2,6 +2,24 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [0.7.6] - 2026-11-17
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.7.6**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.7.6** (build 0024), which
+  shows the open mission's `.lua` in the status bar.
+
+### Added
+
+- `game.version()`: the running OP2LuaCore's version and build time, e.g. `"0.7.6"`, `"2026-11-17 12:15:06"`.
+- `game.op2_version()`: the version the running Outpost 2 goes by (`"1.4.0.1"` under OPU 1.4.x) and Outpost2.exe's
+  file version (`"1.2.0.7"`). For display; don't branch game logic on it in multiplayer.
+
+### Fixed
+
+- A Guard Post armed with `"Starflare"` or `"Supernova"` no longer crashes the game when it is drawn: it gets the Guard
+  Post's own turret version of the weapon (Tutorials 13 and 14 make such Guard Posts).
+
 ## [0.7.5] - 2026-11-17 - multiplayer missions
 
 ### Changed
