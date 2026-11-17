@@ -4,6 +4,13 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.7.9] - 2026-11-17
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.7.9**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.7.9** (build 0025), which
+  takes a campaign mission's type in Mission Properties and plays a sound when a map has loaded.
+
 ### Added
 
 - `docs/FILE-FORMAT.md`: the mission files - every `placement.lua` key, the mission DLL's settings, how the files are
@@ -11,9 +18,9 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ### Fixed
 
-- Placement takes `at = { x =, y = }` and the game's own tile, `{ x =, y =, raw = true }`, as script calls do (needs
-  the next `bin/OP2LuaCore.dll`).
+- Placement takes `at = { x =, y = }` and the game's own tile, `{ x =, y =, raw = true }`, as script calls do.
 - The Hold the Line sample's placement comment said its coordinates were the game's own; they are status-bar ones.
+- `group:first_of_type(type)` without a weapon found nothing.
 
 ## [0.7.6] - 2026-11-17
 
