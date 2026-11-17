@@ -2,7 +2,16 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
-## [Unreleased] - multiplayer missions
+## [0.7.5] - 2026-11-17 - multiplayer missions
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.7.5**: everything below.
+- `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.7.5** (build 0024): saving rewrites only what you edited in
+  `placement.lua`; New Mission and Properties set the mission DLL's type and player count; beacons, walls, tubes,
+  markers and dozed borders on the map; Mission > Test in OP2 (F5) copies the mission into the game and starts it
+  through op2launcher; the selected tile in the status bar and side panel; the game's OP2LuaCore.dll version in
+  the status bar. New Mission finds `bin/LuaMission.dll` from `tools/`.
 
 ### Fixed
 
