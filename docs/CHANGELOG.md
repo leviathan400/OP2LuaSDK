@@ -4,6 +4,9 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+### Added
+- `unit.lights`, `unit:set_offensive(on)` and `unit:set_emp(ticks)` (OP2LuaCore; see API.md).
+
 ## [0.7.9] - 2026-11-17
 
 ### Changed

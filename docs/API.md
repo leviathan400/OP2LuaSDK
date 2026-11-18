@@ -296,6 +296,7 @@ kept in a saved game. `ai:` lines in the AI log name each group made.
 | `unit.kit` | The structure kit a ConVec is carrying (type name). |
 | `unit.command` | Current command (raw int). |
 | `unit.is_building` / `unit.is_vehicle` / `unit.is_factory` / `unit.is_offensive` | Classification. |
+| `unit.lights` | A vehicle's headlights are on (the game's own flag, set by the player or `set_lights`). |
 | `unit.enabled` / `unit.idled` / `unit.disabled` / `unit.under_construction` | Building status. |
 | `unit.busy` / `unit.is_emped` / `unit.is_infected` | Activity / status effects. `busy` is the game's `Unit::IsBusy`: the unit has a command (a Spaceport until its rocket is built). |
 | `unit.research_topic` | The tech id a lab is researching; nil when it isn't researching. |
@@ -316,6 +317,8 @@ kept in a saved game. `ai:` lines in the AI log name each group made.
 | `unit:stop()` | Cancel the current order. |
 | `unit:set_weapon(name)` | Change the weapon turret. |
 | `unit:set_lights(on)` | Headlights on/off. |
+| `unit:set_offensive(on)` | Whether the unit acts as a combat unit: `false` keeps it from opening fire (an escort holding back), `true` lets it fight again. |
+| `unit:set_emp(ticks)` | EMP the unit for `ticks`; `-1` for as long as the game can (65,535 ticks), `0` to end it. |
 | `unit:damage(n)` / `unit:heal(n)` | Inflict / repair `n` hit points (`damage` past max kills it). |
 | `unit:kill()` / `unit:self_destruct()` / `unit:remove()` | Die (explosion) / self-destruct / vanish silently. |
 | `unit:transfer(player)` | Give the unit to another player (`Player` or 1-based number). |
