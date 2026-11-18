@@ -1,7 +1,7 @@
 # OP2Lua Mission API
 
 The surface a mission author works with in `mission.lua`. Small, shaped like the game, and
-multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.7.9.
+multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.0.
 
 ## Coordinates (type what you see in-game)
 
@@ -83,12 +83,12 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 |---|---|
 | `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights= }` | Create units; returns a list of `Unit`. `at` accepts a `Region`, a `Unit`, or `{x,y}`. `player` accepts a `Player` or a 1-based number. Multiple units are spread over tiles automatically; `exact = true` places them on `at` itself, as a mission's setup places its bases (structures beside tubes). |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.7.9"`, `"2026-11-17 12:15:06"`. Print it, or show it with `game.message`. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.0"`, `"2026-11-17 12:15:06"`. Print it, or show it with `game.message`. |
 | `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings: `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the version a multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.4.0.1` with OPU 1.4.x). For display only: don't branch game logic on it in multiplayer. |
 | `game.message(text [, sound])` | In-game message. `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the default. |
 | `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`). |
 | `game.rand(n)` | Synchronized random integer in `0..n-1`. **The only randomness available.** `game.rand(0)` draws too (and gives 0), as the game's GetRand does. |
-| `game.morale_steady([level])` | Lock all players' morale at `level` (default `"Good"`; one of Excellent/Good/Fair/Poor/Terrible) - the multiplayer "Morale Steady" rule, so the colony doesn't fluctuate. |
+| `game.morale_steady([level [, player]])` | Lock all players' (or one player's) morale at `level` (default `"Good"`; one of Excellent/Good/Fair/Poor/Terrible) - the multiplayer "Morale Steady" rule, so the colony doesn't fluctuate. |
 | `game.free_morale([player])` | Release the morale lock (all players, or one). |
 | `game.num_players()` / `game.num_humans()` | Player counts (human + AI / human only). |
 | `game.initial_units()` | The multiplayer lobby's Initial Vehicles (0-12). |
@@ -140,6 +140,10 @@ as a raw integer SoundID.
 | `game.tile(at)` / `game.set_tile(at, index)` | A tile's graphic, as its index in the map's tile mappings (what a map editor shows). The stock lava maps swap in volcano tiles before an eruption. |
 | `game.units_in_range(at, range)` | The units within `range` tiles of `at`, as the game's `InRangeEnumerator` finds them. |
 | `game.units_in_rect(rect)` | The units of every player in the rectangle `{x1, y1, x2, y2}`, as the game's `InRectEnumerator` finds them. |
+| `game.set_music(songs [, repeat_from])` | The music playlist: the game's song numbers in order, and the position (1-based) it starts again from once played through (`TethysGame::SetMusicPlayList`). |
+| `game.player(n)` | The `Player` of slot `n` (1-7), whether or not the lobby has it: a mission's own computer player beyond the lobby's (the game's player 6, say) is `game.player(7)`. |
+| `game.set_required_tech(type, tech)` | The topic a unit type (a name or raw MapID) needs before anyone can build it, to gate units behind a mission's own topics. |
+| `game.set_tech_cost(tech, cost)` | A topic's research cost for Eden and Plymouth; `-1` makes it impossible to research. |
 | `game.rand_point(rect)` | A tile `{ x, y }` drawn in `{x1, y1, x2, y2}` by the game's own `MAP_RECT::RandPt`, so the game's random numbers go as a stock mission's do. |
 | `game.create_emp_missile(target, from, player)` | An EMP missile of `player` flying from `from` to `target` (`TethysGame::SetEMPMissile`). |
 | `game.wreckage()` | The wreckage on the map (the gaia player's), as a stock mission walks it. |
@@ -278,6 +282,36 @@ converter (`op2dll lua`) sets it in the stub for a stock map that has one, and t
 the one after the humans (`players[game.num_humans() + 1]`). Groups, like `on` functions, aren't
 kept in a saved game. `ai:` lines in the AI log name each group made.
 
+## hackaray.* (opt-in: Hackaray.dll's nuke patch and end videos)
+
+Some community missions ship with `Hackaray.dll`, a game-patching library, in their zip. A mission
+that wants two of its patches asks for the library with its own line; without `hackaray.load()`, OP2Lua never
+looks for the DLL, even when it is in the game folder.
+
+| Call | Does |
+|---|---|
+| `hackaray.load()` | Looks for `Hackaray.dll` in the game folder (once per mission). True when it's there with both functions below. |
+| `hackaray.nuke_patch(on)` | The Spaceport can build and launch the nuclear missile (`true`), or not (`false`). True when done; false when the DLL is missing or refused. |
+| `hackaray.end_videos(win_avi, lose_avi)` | The videos played when the mission is won or lost (e.g. `"CES.avi"`, `"MPUW.avi"`); `end_videos()` turns them off. False when the DLL is missing. |
+| `hackaray.end_videos{ eden = { win, lose }, plymouth = { win, lose } }` | The same, the pair picked by the colony of the player at each machine. |
+
+Calling `nuke_patch` or `end_videos` before `hackaray.load()` is an error. Whatever the mission switched on is
+switched off, and the library freed, when the mission is unloaded.
+
+```lua
+function on_init()
+  if not hackaray.load() then
+    error("this mission needs Hackaray.dll in the game folder")
+  end
+  hackaray.nuke_patch(true)
+  hackaray.end_videos{ eden = { "CES.avi", "MPUW.avi" }, plymouth = { "CPS.avi", "MEUW.avi" } }
+end
+```
+
+The nuke patch changes the rules on every machine: in a multiplayer game every player needs the same
+`Hackaray.dll` in their game folder, or the games go out of step. Send it with the mission. The videos are only
+shown on each player's own screen.
+
 ## Unit
 
 **State (read-only properties)**
@@ -298,6 +332,9 @@ kept in a saved game. `ai:` lines in the AI log name each group made.
 | `unit.is_building` / `unit.is_vehicle` / `unit.is_factory` / `unit.is_offensive` | Classification. |
 | `unit.lights` | A vehicle's headlights are on (the game's own flag, set by the player or `set_lights`). |
 | `unit.enabled` / `unit.idled` / `unit.disabled` / `unit.under_construction` | Building status. |
+| `unit.rotation` / `unit.is_stickyfoamed` | The way a vehicle faces, 0-255 (0 East, clockwise; a facing is `rotation // 32`); whether it is stickyfoamed. |
+| `unit.dirt_prevention` | A building's DIRT damage prevention through its tube connection, in hundredths of a percent (`2500` = 25%); 0 when not connected. |
+| `unit.double_fire_rate` / `unit.eden` | Read and set: the unit fires twice as often (the Tiger's flag); the unit counts as Eden-made, which picks Eden's art. |
 | `unit.busy` / `unit.is_emped` / `unit.is_infected` | Activity / status effects. `busy` is the game's `Unit::IsBusy`: the unit has a command (a Spaceport until its rocket is built). |
 | `unit.research_topic` | The tech id a lab is researching; nil when it isn't researching. |
 | `unit.producing` / `unit.progress` | The type a factory is making (a vehicle, or a kit at the Structure Factory) and how far along it is, `0..1`; both nil when it makes nothing. |
@@ -405,7 +442,11 @@ Cargo can also be set in placement: `{ type="CargoTruck", ..., cargo="RareMetal"
 | `player.ore_capacity` / `player.rare_ore_capacity` | How much common and rare ore the colony can store (read-only), as the game's last update worked it out; the game cuts `player.ore` / `player.rare_ore` down to these at each colony update (every 256 ticks). |
 | `player:cost(type [, weapon])` | What `type` costs this player's colony, `{ common =, rare = }` (ore), with a turret `weapon`'s cost added for a vehicle or Guard Post; nil for an unknown type. Research that changes a cost is included. |
 | `player.difficulty` | The Colony Games menu difficulty as `"Easy"`/`"Normal"`/`"Hard"` (read-only). Read it off the human player to self-tune a mission per difficulty. |
+| `player:unit_stat(type, field)` / `player:set_unit_stat(type, field, value)` | The player's stats for a unit type (a name, or a raw MapID number to walk a range of types), the record the tech tree's upgrades change: `"hp"`, `"repair"`, `"armor"` (raw: 256, 180, 130, 90, 60, 40 for classes 0-5), `"common_cost"`, `"rare_cost"`, `"build_time"`, `"sight_range"`; vehicles `"move_speed"`, `"turn_rate"`, `"production_rate"`, `"reload_time"`, `"cargo_capacity"`; weapons `"concussion"`, `"penetration"`, `"reload_time"`, `"weapon_range"`; buildings `"power"`, `"workers"`, `"scientists"`, `"storage"`, `"production_capacity"`, `"storage_bays"`. In a multiplayer game, change them the same way on every machine (from the script, not from one player's input). |
+| `player:unmark_research(tech)` | The player no longer has the topic (the opposite of `mark_research`). |
 | `player:satellite_count(type)` | How many of a satellite or launched Spaceport cargo rocket the player has - e.g. `"EDWARDSatellite"`, `"RareMetalsCargo"`, `"CommonMetalsCargo"`, `"FoodCargo"`, `"EvacuationModule"`. Drives Starship-colony evacuation victories. |
+| `player.edward_satellites` | EDWARD Satellites in orbit (0-15), read and set. With one up, every mining beacon counts as surveyed for the player, so its Robo-Miners need no Robo-Surveyor. |
+| `player.solar_satellites` | Solar Power Satellites in orbit (0-15), read and set. |
 
 ```lua
 players[2].ore = players[2].ore + 5000        -- grant the AI a stockpile

@@ -1,7 +1,7 @@
 # OP2Lua Mission File Format
 
 The files an OP2Lua mission is made of, what OP2LuaCore reads from each, and in what order. This is the reference
-for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.7.9.
+for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.8.0.
 
 ## The files
 
@@ -165,6 +165,7 @@ A table keyed by player number, **1-based** (`[1]` is the first player). Each en
 | `food` | 0 | Stored food. |
 | `kids`, `workers`, `scientists` | 0 | Population. |
 | `solar_satellites` | | Solar Power Satellites in orbit (applied when above 0). |
+| `edward_satellites` | | EDWARD Satellites in orbit (applied when above 0): with one up every mining beacon counts as surveyed for the player. |
 | `tech_level` | | Gives every topic whose tech ID is at most 1000 times this, and the free topics after them (applied when above 0). |
 | `completed_research` | | A list of tech IDs (from the tech tree file) marked researched. |
 

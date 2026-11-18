@@ -4,7 +4,22 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-18
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.0**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.0** (build 0025).
+
 ### Added
+
+- `game.morale_steady(level, player)` locks one player's morale; `unit_stat`, `set_unit_stat` and `set_required_tech`
+  take a raw MapID number as well as a name.
+- `game.set_music(songs, repeat_from)`, `game.player(n)`, `player:unit_stat` / `set_unit_stat`, `game.set_required_tech`, `game.set_tech_cost`,
+  `player:unmark_research`, `unit.rotation`, `unit.is_stickyfoamed`, `unit.dirt_prevention`, `unit.double_fire_rate`, `unit.eden` (docs/API.md).
+- `player.edward_satellites` and `player.solar_satellites` (read and set), placement `edward_satellites`: with an
+  EDWARD Satellite every beacon counts as surveyed for the player.
+- `hackaray.*` (docs/API.md), opt-in: with a `hackaray.load()` line a mission can switch on Hackaray.dll's nuke
+  patch and set the end-of-game videos.
 - `unit.lights`, `unit:set_offensive(on)` and `unit:set_emp(ticks)` (OP2LuaCore; see API.md).
 
 ## [0.7.9] - 2026-11-17
