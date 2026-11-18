@@ -4,21 +4,25 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
-### Added
-
-- `game.units_closest`, `game.force_robot_command`, `game.clear_cheated`, `player:set_launched` (needs the next
-  `bin/OP2LuaCore.dll`).
+## [0.8.1] - 2026-11-18
 
 ### Changed
 
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.1**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.1** (build 0026), whose
+  New Mission names a Colony mission's DLL `c<Name>.dll`; `tools/op2lua-newmission.exe` does too, and writes the lobby
+  skeleton for a multiplayer `--type`.
 - `move` / `attack` / `attack_move` go out at once, as in a mission DLL; only a unit made this tick or the last
   waits until it can take the order.
+
+### Added
+
+- `game.units_closest`, `game.force_robot_command`, `game.clear_cheated`, `player:set_launched`.
+- `game.play_wav(file)`: a WAV shipped with the mission; `game.message(text, false)`: a message with no sound.
 
 ### Fixed
 
 - Area arguments take a `{ x =, y = }` point and a raw tile; `markers[name]` is in status-bar coordinates;
-  `math.random`, `dofile`, `loadfile` and `load` are gone from the sandbox; empty slots read `"None"` (needs the
-  next `bin/OP2LuaCore.dll`).
+  `math.random`, `dofile`, `loadfile` and `load` are gone from the sandbox; empty slots read `"None"`.
 - `tools/new-mission.ps1` names the DLL `c<Name>.dll`, so the mission is listed under Colony Games.
 - docs: API.md checked call by call against the code, with a *Names* section; INSTALL, GETTING-STARTED, the README
   and the samples README brought up to date.
