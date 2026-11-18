@@ -24,10 +24,13 @@ powershell -ExecutionPolicy Bypass -File tools\new-mission.ps1 -Name "My First M
 That creates three files (in `out/` by default):
 
 ```
-MyFirstMission.dll              <- the mission OP2 lists (named "My First Mission")
+cMyFirstMission.dll             <- the mission OP2 lists (named "My First Mission")
 MyFirstMission.lua              <- the logic  (you edit this)
 MyFirstMission.placement.lua    <- the layout (you edit this)
 ```
+
+The leading `c` on the DLL files it under Colony Games; the scripts keep the plain name. OP2LuaEditor's
+File > New Mission makes the same three files, straight into the game's `OPU\maps\LUA\`.
 
 The `.dll` is just a tiny pre-made loader - you never compile it. It finds and runs the two `.lua`
 files sitting next to it.
@@ -36,9 +39,10 @@ files sitting next to it.
 
 A mission is **nouns + verbs**:
 
-- **`placement.lua`** = the starting state. A `return { ... }` table: players, their resources, and
-  the units/structures on the map at the start. Pure data.
-- **`mission.lua`** = what happens. You define `on_init()` and set up timers, waves, and win/lose
+- **`MyFirstMission.placement.lua`** = the starting state. A `return { ... }` table: players, their
+  resources, and the units/structures on the map at the start. Pure data
+  ([`FILE-FORMAT.md`](FILE-FORMAT.md) has every key).
+- **`MyFirstMission.lua`** = what happens. You define `on_init()` and set up timers, waves, and win/lose
   rules inside it.
 
 ## 3. Place some units
@@ -71,11 +75,11 @@ visually**, then convert:
 1. **[OP2MissionEditor](https://github.com/leviathan400/OP2MissionEditor)** - load a map and drag
    units, structures, beacons, and regions into place, then save an **`.opm`** mission file.
 2. **[OP2OpmTools](https://github.com/leviathan400/OP2OpmTools)** - convert that `.opm` into a
-   `placement.lua` for your mission.
+   mission (Export Lua writes all three files).
 
 So the full layout workflow is: **place in OP2MissionEditor → save `.opm` → convert with OP2OpmTools
-→ drop the generated `placement.lua` next to your mission.** You still write the logic in
-`mission.lua` by hand (next step).
+→ play.** You still write the logic in the mission's `.lua` by hand (next step). OP2LuaEditor (in
+`tools/`) edits a mission's layout over its map directly.
 
 ## 4. Script the mission
 
@@ -118,16 +122,16 @@ Want attack waves? Add a timer:
 ```
 
 The full list of calls - scheduling, `game.*`, `unit:*`, `player:*`, `region:*` - is in
-[`API.md`](API.md). Skim it once; it's short.
+[`API.md`](API.md). Skim it once.
 
 ## 5. Install and play
 
 Copy the three files into `OPU\maps\LUA\` (see [`../INSTALL.md`](../INSTALL.md)), launch Outpost 2,
 and start a New Colony Game. "My First Mission" is in the list.
 
-> For the mission to appear under **Colony Games**, the `.dll` filename must start with a lowercase
-> `c` (e.g. `cMyFirstMission.dll`). The two `.lua` files keep the plain name - the runtime strips
-> the leading `c` when it looks for them. See [`../INSTALL.md`](../INSTALL.md) (Step 2).
+> A mission appears under **Colony Games** because its `.dll` filename starts with a lowercase `c`
+> (`cMyFirstMission.dll`). If you rename the files, keep the `c` on the DLL. See
+> [`../INSTALL.md`](../INSTALL.md), *Installing your own mission*.
 
 ## 6. Debug with the log
 
@@ -137,7 +141,7 @@ While building, lean on the log. Add `print(...)` anywhere:
 print("wave " .. wave .. " spawned at tick " .. game.tick())
 ```
 
-It shows up in `OPU\logs\OP2Lua-MyFirstMission.log` - your mission's own log. If anything errors, the
+It shows up in `OPU\logs\OP2Lua-cMyFirstMission.log` - your mission's own log (named after the DLL). If anything errors, the
 log names the file and line. **Always check the log first** when something doesn't behave.
 
 ## 7. Learn from the samples
@@ -152,9 +156,11 @@ The missions in `samples/` are commented - each demonstrates a different style:
 | `hold-the-beacon` | holding a region over time, a progress counter |
 | `seek-and-destroy` | `player:unit_count`, multi-target progress |
 | `cold-front` | a full scripted-AI colony, a volcanic-eruption disaster, difficulty, the starship victory, the logging standard (has its own `README.md`) |
-| `cataclysm` | every disaster type via the disaster director, on `eden01.map` |
+| `cataclysm` | every disaster type on a fixed timeline, on `eden01.map` (`disaster-director/` schedules them at random) |
+| `tug-o-war`, `nostalgia` | multiplayer: the lobby's settings, Last One Standing (each has its own `README.md`) |
 
-Copy one, rename it, and tweak. That's the fastest way to learn.
+[`../samples/README.md`](../samples/README.md) lists every sample. Copy one, rename it, and tweak. That's the
+fastest way to learn.
 
 ## Common gotchas (Outpost 2 quirks)
 

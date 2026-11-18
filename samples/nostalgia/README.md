@@ -5,7 +5,7 @@ A **2-4 player Last One Standing** multiplayer map on `opu_02.map`: a remake of 
 that mission does. Its game calls were recorded under different lobby choices with op2missionreader's
 `op2dll calls` and compared.
 
-Requires an **OP2LuaCore built 2026-11-06 or later** (multiplayer support) and `opu_02.map`, which OPU
+Requires **OP2LuaCore 0.7.5 or later** (multiplayer support) and `opu_02.map`, which OPU
 ships in `OPU\maps\Nostalgia\`.
 
 ## What it does, like the original

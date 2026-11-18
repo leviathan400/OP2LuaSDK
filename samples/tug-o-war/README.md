@@ -5,7 +5,7 @@ the stock `ml2_31.dll` ("2 Player, LastOne, 'Tug-O-War' map", `on2_02.map`) writ
 mission does. Its game calls were recorded under different lobby choices with op2missionreader's
 `op2dll calls` and compared; no code was taken from the DLL.
 
-Requires an **OP2LuaCore built 2026-11-06 or later** (multiplayer support) and the stock map
+Requires **OP2LuaCore 0.7.5 or later** (multiplayer support) and the stock map
 `on2_02.map`.
 
 ## What it does, like the original

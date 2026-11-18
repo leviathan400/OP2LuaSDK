@@ -3,7 +3,8 @@
 This is the convention **every** OP2Lua mission should follow. It keeps the right information in the
 right place so you can debug a mission, a scripted AI, or a crash without wading through noise.
 
-OP2Lua writes up to **three log files** per run (in `Outpost2\OPU\logs\`) and can also echo a scripted
+OP2Lua writes up to **three log files** per run (in `Outpost2\OPU\logs\`), plus the AI status snapshot
+`OP2Lua-<dll>-AI-status.json` when a mission asks for one (`log.ai_status`), and can also echo a scripted
 AI's events to the **in-game comms panel**. Every log line is stamped with the wall-clock time and the
 current game **mark** (100 ticks), and nothing is duplicated between files.
 

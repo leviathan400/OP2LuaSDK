@@ -4,6 +4,25 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+### Added
+
+- `game.units_closest`, `game.force_robot_command`, `game.clear_cheated`, `player:set_launched` (needs the next
+  `bin/OP2LuaCore.dll`).
+
+### Changed
+
+- `move` / `attack` / `attack_move` go out at once, as in a mission DLL; only a unit made this tick or the last
+  waits until it can take the order.
+
+### Fixed
+
+- Area arguments take a `{ x =, y = }` point and a raw tile; `markers[name]` is in status-bar coordinates;
+  `math.random`, `dofile`, `loadfile` and `load` are gone from the sandbox; empty slots read `"None"` (needs the
+  next `bin/OP2LuaCore.dll`).
+- `tools/new-mission.ps1` names the DLL `c<Name>.dll`, so the mission is listed under Colony Games.
+- docs: API.md checked call by call against the code, with a *Names* section; INSTALL, GETTING-STARTED, the README
+  and the samples README brought up to date.
+
 ## [0.8.0] - 2026-11-18
 
 ### Changed

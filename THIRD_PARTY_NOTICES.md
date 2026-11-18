@@ -5,7 +5,7 @@
 | Library | License | Source |
 |---|---|---|
 | Lua 5.4.7 | MIT | https://www.lua.org |
-| sol2 | MIT | https://github.com/ThePhD/sol2 |
+| sol2 3.5.0 | MIT | https://github.com/ThePhD/sol2 |
 | Tethys (TethysAPI) | BSD 3-Clause | The Outpost Universe |
 
 ---

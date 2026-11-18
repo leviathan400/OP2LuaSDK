@@ -13,9 +13,10 @@ A mission is just three files that share a base name:
 | `<Name>.lua` | the **logic** - timers, waves, win/lose, reactions (the "verbs"). |
 
 > Note the DLL is `c`-prefixed but the scripts are **not** (`cStrikeTeam.dll` loads `StrikeTeam.lua`).
-> OP2 only lists a mission whose DLL filename starts with `c`; the stub strips that `c` to find the
-> scripts. **Every sample here ships its DLL already `c`-prefixed**, so all of them are drop-in - copy
-> a folder's three files into the game and the mission appears in the menu, no renaming needed.
+> OP2 lists a mission under Colony Games only when its DLL filename starts with `c`; the runtime strips
+> that `c` to find the scripts. **Every colony sample here ships its DLL already `c`-prefixed**; the two
+> multiplayer samples (`nostalgia/`, `tug-o-war/`) have none, since the multiplayer lobby lists them. All
+> of them are drop-in - copy a folder's three files into the game, no renaming needed.
 
 ## How to run a sample
 
@@ -28,7 +29,7 @@ A mission is just three files that share a base name:
 Logs land in `OPU\logs\OP2Lua-<MissionDll>.log` (per mission) and `OP2Lua.log` (shared). Each
 mission's `print()` output goes to its own log - handy when reading along with the script.
 
-See [`../INSTALL.md`](../INSTALL.md) for full install paths, the OP2Lua **`docs/API.md`** for the
+See [`../INSTALL.md`](../INSTALL.md) for full install paths, [`../docs/API.md`](../docs/API.md) for the
 scripting API, and [`../tools/`](../tools) (`new-mission`) to scaffold your own. To convert a mission
 laid out in the **OP2MissionEditor**, run its `.opm` through **OP2OpmTools** (Export Lua), which writes
 all three files for you.
@@ -45,7 +46,7 @@ all three files for you.
 | `seek-and-destroy/` | **Seek and Destroy** | *Hunt* - find and destroy all three enemy Guard Post outposts. |
 | `the-convoy/` | **The Convoy** | *Escort* - a convoy scenario. |
 | `salvage/` | **Salvage** | *Recovery* - haul the tech wrecks scattered across the wastes to your Lab (on4_01.map). |
-| `cataclysm/` | **Cataclysm** | *Survival* - weather every disaster and keep your Command Center standing. Demos the disaster director (below). |
+| `cataclysm/` | **Cataclysm** | *Survival* - weather every disaster and keep your Command Center standing. Fires each disaster type on a fixed timeline; the disaster director (below) schedules them at random instead. |
 | `cold-front/` | **Cold Front** | *Reference mission* - an Eden colony beside a living Plymouth AI on `on1_01.map`, with a volcano threatening your ground; evacuate to orbit via the starship. The fullest showcase (economy AI + disasters + starship victory). Has its own [`README`](cold-front/README.md). |
 | `plymouth-cold-war-clone/` | **Plymouth Cold War (Lua clone)** | A faithful Lua port of the classic C++ mission - destroy the entrenched Plymouth Advanced Lab on `eden03.map`. |
 | `ai-sandbox/` | **AI Sandbox** | Human colony vs. an **autonomous economy AI** on the 4-corner "Nostalgia" layout - the testbed for the scripted computer player. |
@@ -56,4 +57,4 @@ all three files for you.
 
 | Folder | What it is |
 |---|---|
-| `disaster-director/` | A **reusable module** (`disaster-director.lua`), not a playable mission - a weighted/random disaster scheduler (à la Sirbomber's DisasterCreator) in pure Lua. Copy `install_disaster_director(...)` into your own mission's `.lua` and call it once from `on_init()`. `cataclysm/` shows it in action. |
+| `disaster-director/` | A **reusable module** (`disaster-director.lua`), not a playable mission - a weighted/random disaster scheduler (à la Sirbomber's DisasterCreator) in pure Lua. Copy `install_disaster_director(...)` into your own mission's `.lua` and call it once from `on_init()`. |

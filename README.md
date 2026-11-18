@@ -8,8 +8,10 @@ or compile anything - the runtime (`OP2LuaCore.dll`) is prebuilt and included. Y
 
 | File | What it is |
 |---|---|
-| `cMyMission.placement.lua` | Players, starting units, resources, beacons, named regions. The starting layout. |
-| `cMyMission.lua` | What happens during the mission (timers, attack waves, win/lose, reactions). |
+| `MyMission.placement.lua` | Players, starting units, resources, beacons, named regions. The starting layout. |
+| `MyMission.lua` | What happens during the mission (timers, attack waves, win/lose, reactions). |
+
+A third file, `cMyMission.dll`, is a ready-made stub the tools write for you; you never compile it.
 
 That is the whole job: edit Lua, drop the files in the game, play. Missions are
 **multiplayer-safe by construction** (see [`docs/API.md`](docs/API.md)).
@@ -22,6 +24,7 @@ That is the whole job: edit Lua, drop the files in the game, play. Missions are
 OP2LuaSDK/
   README.md                 - you are here
   INSTALL.md                - where files go (Outpost 2 1.4.1 folder layout)
+  LICENSE, THIRD_PARTY_NOTICES.md
   bin/
     OP2LuaCore.dll          - the prebuilt runtime (drop into OPU). Ships once, runs every mission.
     LuaMission.dll          - the mission stub template (used by the new-mission tools)
@@ -30,7 +33,8 @@ OP2LuaSDK/
     FILE-FORMAT.md          - the mission files: placement.lua keys, the mission DLL's settings
     GETTING-STARTED.md      - write your first mission, step by step
     LOGGING.md              - the logging/debug standard (Main / Mission / AI logs, in-game AI events)
-  samples/                  - complete, commented missions to play and learn from
+    CHANGELOG.md            - what each release changed
+  samples/                  - complete, commented missions to play and learn from (samples/README.md lists them)
     hold-the-line/          - DEFENSE: survive escalating waves
     strike-team/            - OFFENSE: destroy the enemy Command Center
     the-convoy/             - ESCORT: get a cargo truck to safety
@@ -40,14 +44,20 @@ OP2LuaSDK/
                               (living AI base, lava disaster, difficulty, starship victory; see its README.md)
     cataclysm/              - SURVIVAL: keep your Command Center standing through every disaster type
                               (meteor, quake, storm, vortex, eruption, blight) on eden01.map
+    salvage/                - RECOVERY: haul tech wrecks to your lab
+    plymouth-cold-war-clone/ - a Lua port of the classic C++ mission Plymouth Cold War
+    ai-sandbox/             - your colony against a scripted economy AI
     tug-o-war/              - MULTIPLAYER: 2-player Last One Standing, a remake of the stock ml2_31.dll
                               (lobby settings, random starts, disasters; see its README.md)
+    nostalgia/              - MULTIPLAYER: 2-4 players, Last One Standing, a remake of ml4_43.dll
+    feature-test/, smoke-test/ - API coverage tests (run them after changing the core)
     disaster-director/      - HELPER: a copy-paste random/weighted disaster scheduler (meteor, quake,
                               storm, vortex, lava, blight) with base-targeting and a min-gap timer
   tools/
+    OP2LuaEditor.exe        - the visual layout editor (Windows, .NET Framework 4.8), with OP2UtilityDotNet.dll
     op2lua-newmission.exe   - scaffold a new named mission, Windows (DLL + skeleton scripts)
     op2lua-newmission       - the same tool, prebuilt for Linux (x86-64, static). `chmod +x` it.
-                              (Not yet rebuilt with --type: multiplayer missions need the .exe for now.)
+                              (An older build: --map only, and its DLL lacks the c - rename it c<Name>.dll.)
     new-mission.ps1         - the same scaffolder as a PowerShell script (Windows; Colony missions only)
                               (macOS / other: build from source - op2lua-newmission/ in the OP2Lua repo)
 ```
@@ -62,8 +72,9 @@ OP2LuaSDK/
    `OPU\maps\LUA\`, launch Outpost 2, and pick it from the Colony Games list. (A mission lists under
    Colony Games when its `.dll` filename starts with `c` - see [`INSTALL.md`](INSTALL.md).)
 3. **Read its `.lua`.** Open `samples/hold-the-line/HoldTheLine.lua` - that's the entire mission.
-4. **Make your own.** Run `tools/op2lua-newmission "My First Mission"` (or `tools/new-mission.ps1 -Name "My First Mission"`) and edit the two `.lua`
-   files it generates. See [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md).
+4. **Make your own.** Run `tools/op2lua-newmission "My First Mission"` (or `tools/new-mission.ps1 -Name "My First Mission"`,
+   or OP2LuaEditor's File > New Mission) and edit the two `.lua` files it generates. See
+   [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md).
 
 You never open a compiler. The only files you ever edit are `.lua` text files.
 
@@ -84,7 +95,11 @@ No offsets to remember - type what you see, the unit lands there.
 
 ## OP2LuaEditor
 
-A visual editor for building mission layouts. Load a map as the backdrop, place units, draw regions, set mission properties, and save it straight to placement.lua. It also scaffolds new missions (clones + names the stub DLL) so you can go from blank to playable without touching a compiler.
+A visual editor for building mission layouts: `tools/OP2LuaEditor.exe` (Windows, .NET Framework 4.8, and an
+Outpost 2 1.4.1 install for the map graphics). Load a map as the backdrop, place units, draw regions, set mission
+properties, and save it straight to placement.lua. It also scaffolds new missions (clones + names the stub DLL) so
+you can go from blank to playable without touching a compiler, and Test in OP2 (F5) starts the game straight
+into the open mission.
 
 ![Screenshot](https://images.outpostuniverse.org/OP2LuaEditor.png)
 

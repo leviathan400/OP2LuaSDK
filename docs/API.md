@@ -15,10 +15,19 @@ a tile in OP2 and whatever it reads is what you type:
 
 The runtime translates them to OP2's internal grid for you (OP2 has a hidden 32-tile horizontal
 padding and 1-based coordinates - you never have to think about it). Coordinates are 1-based; a
-rectangle region is `{x1, y1, x2, y2}`, a point is `{x, y}`. A point may also be the game's own tile,
-unconverted: `{ x = 1262, y = 51, raw = true }`, as a stock mission passes one off the map (CPS2's
+rectangle is `{x1, y1, x2, y2}`, a point is `{x, y}` or `{ x =, y = }`. A point may also be the game's own
+tile, unconverted: `{ x = 1262, y = 51, raw = true }`, as a stock mission passes one off the map (CPS2's
 truck waiting off the edge, CES1's disasters on rows past the bottom). A point off the map isn't wrapped
 onto it: it reaches the game as given (Plymouth 3's storms end on the row below the map).
+
+Wherever a call takes a location, it also takes a `Unit` (its tile) or a `Region` (its centre). An **area**
+argument (`build_wall`, `doze`, `units_in_rect`, `rand_point`, a group's `set_rect`, ...) takes a rectangle, a
+point in any of the forms above (one tile), a `Region`, or a `Unit` (the tiles it covers); there, a
+`{x1, y1, x2, y2}` rectangle or an `{x, y}` point is wrapped onto the map like the game's own coordinates.
+
+What the API gives back is in the same coordinates, so it goes straight back in: `unit.x`/`unit.y`,
+`markers[...]`, `region:center()`, `game.find_place`. `game.find_emp_missile_target` is the one exception (a
+raw tile, marked `raw = true`).
 
 ## Your mission file
 
@@ -40,16 +49,20 @@ end
 | `players[id]` | A `Player` (1-based, as in the editor). |
 | `units["name"]` | A named `Unit`. |
 | `regions["name"]` | A named `Region` (point or rectangle). |
-| `markers["name"]` | A marker `{x=,y=}`. |
+| `markers["name"]` | A placement marker's tile, `{ x =, y = }` (pass it straight to `at =`). |
 
 ## Callbacks (you define; the engine calls)
 
 | Callback | When |
 |---|---|
-| `on_init() -> bool` | Once at mission start. Return `false` to abort. |
-| `on_tick()` | Every game tick. Prefer the scheduler below. |
-| `on_create_unit(unit)` / `on_destroy_unit(unit)` / `on_damage_unit(unit)` | Unit events. |
-| `on_chat(chat)` | A chat message (`chat.text` read/write, `chat.player`). |
+| `on_init() -> bool` | Once at mission start, after placement has made the level. Return `false` (or `nil`) to abort; returning nothing carries on, and so does an error in it (it is logged). |
+| `on_tick()` | Every game tick, after the queued unit orders and the scheduler's timers of that tick. Prefer the scheduler below. |
+| `on_create_unit(unit)` / `on_destroy_unit(unit)` | Unit created / destroyed. Delivered by OPU mod **1.4.0+**. |
+| `on_damage_unit(target, source, damage)` | A unit took damage. Delivered by OPU mod **1.4.2+** only - on older loaders (1.4.0/1.4.1) it never fires. |
+| `on_chat(chat)` | A chat message: `chat.text` (read and write; the game's buffer limits its length) and `chat.player`, the sender's player number, **0-based** like `unit.owner`. |
+| `on_load()` / `on_unload()` | The game loads / unloads the mission. Return `false` to refuse; returning nothing is true. |
+| `on_end()` | The game ends the mission. |
+| `on_save()` / `on_load_save()` | The game saves / loads a saved game. Return `false` to refuse. The script's own variables and timers aren't in the save ([FILE-FORMAT.md](FILE-FORMAT.md), Saved games). |
 
 A bug in any callback is caught, logged with a file:line, and surfaced - it never crashes the game.
 `print(...)` from a mission is your debug channel: it goes to **that mission's own log**,
@@ -67,7 +80,7 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 | `marks(n)` | Convert `n` marks to ticks, for the relative timers: `after(marks(3), fn)`, `every(marks(120), fn)`. |
 | `after(ticks, fn)` | **Relative** - run `fn` once, `ticks` from now (use with `marks(n)`). |
 | `every(ticks, fn)` | **Relative** - run `fn` every `ticks` (use with `marks(n)`). Returns a handle with `:cancel()`. |
-| `when(predicate, fn)` | **Conditional** - poll `predicate()`; run `fn` once, the first time it's true. |
+| `when(predicate, fn)` | **Conditional** - poll `predicate()` every tick; run `fn` once, the first time it's true. A predicate that raises an error counts as false, without a log line. |
 | `at(tick, fn)` | **Absolute (raw ticks)** - run `fn` once when `game.tick()` reaches `tick`. Prefer `at_mark`. |
 | `game.tick()` / `game.mark()` | Read the clock (raw tick, and mark = tick // 100). |
 
@@ -75,81 +88,91 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 > · `after(marks(5), reinforce)` (5 marks from now).
 >
 > Legacy: `game.seconds(n)` / `game.minutes(n)` still exist (1 second = 1 mark, 1 minute = 60 marks) but
-> are **deprecated** - use marks instead.
+> are **deprecated** - use marks instead. So are the constants they use, `game.ticks_per_second` (100) and
+> `game.ticks_per_minute` (6000).
 
 ## game.*
 
 | Call | Effect |
 |---|---|
-| `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights= }` | Create units; returns a list of `Unit`. `at` accepts a `Region`, a `Unit`, or `{x,y}`. `player` accepts a `Player` or a 1-based number. Multiple units are spread over tiles automatically; `exact = true` places them on `at` itself, as a mission's setup places its bases (structures beside tubes). |
+| `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights=, exact= }` | Create units; returns a list of `Unit` (empty for an unknown `type`, with a warning in the log). `at` is any location form. `player` accepts a `Player` or a 1-based number (default `players[1]`). `count` defaults to 1, `direction` to `"East"` (see *Names*), `lights` to on. Each unit goes on a clear tile near `at`, found by the game; `exact = true` places them on `at` itself (several in rows of 4 from `at`), as a mission's setup places its bases (structures beside tubes) - only on tiles known to be free. |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.0"`, `"2026-11-17 12:15:06"`. Print it, or show it with `game.message`. |
-| `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings: `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the version a multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.4.0.1` with OPU 1.4.x). For display only: don't branch game logic on it in multiplayer. |
-| `game.message(text [, sound])` | In-game message. `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the default. |
-| `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`). |
-| `game.rand(n)` | Synchronized random integer in `0..n-1`. **The only randomness available.** `game.rand(0)` draws too (and gives 0), as the game's GetRand does. |
-| `game.morale_steady([level [, player]])` | Lock all players' (or one player's) morale at `level` (default `"Good"`; one of Excellent/Good/Fair/Poor/Terrible) - the multiplayer "Morale Steady" rule, so the colony doesn't fluctuate. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.0"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
+| `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings (either one nil when it can't be read): `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the game's `TApp::Version`, the number its multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.3.0.4` retail 1.3.6, `1.4.0.1` OPU 1.4.x); OPU sets it, the file on disk keeps 1.2.0.7. For display only: don't branch game logic on it in multiplayer. |
+| `game.message(text [, sound])` | In-game message (comms panel). `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the default. **Keep `text` short - OP2's comms panel truncates around ~90 chars; put full detail in the log via `print()` instead.** |
+| `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`), for everyone or for one player. `toPlayer` is the game's **0-based** player number (`unit.owner`), not a `Player`. |
+| `game.rand(n)` | Synchronized random integer in `0..n-1`. **The only randomness available.** `game.rand(0)` draws too (and gives 0), as the game's GetRand does; a negative `n` gives 0 without drawing. |
+| `game.morale_steady([level [, player]])` | Lock all players' (or one player's) morale at `level` (default `"Good"`; one of Excellent/Good/Fair/Poor/Terrible, or Great/OK/Rotten for Excellent/Fair/Terrible; any other name is Good) - the multiplayer "Morale Steady" rule, so the colony doesn't fluctuate. |
 | `game.free_morale([player])` | Release the morale lock (all players, or one). |
 | `game.num_players()` / `game.num_humans()` | Player counts (human + AI / human only). |
 | `game.initial_units()` | The multiplayer lobby's Initial Vehicles (0-12). |
 | `game.uses_day_night()` / `game.uses_morale()` | The lobby's Day and Night, and whether morale is free (`false` when Morale Steady is ticked). |
-| `game.beacons([ore])` | Discover the map's mining beacons (a list of `Unit`); optional `"Common"`/`"Rare"`. Rank by distance with `unit.x`/`unit.y`. |
+| `game.beacons([ore])` | Discover the map's mining beacons that have no mine yet (a list of `Unit`; magma vents and fumaroles aren't included); optional `"Common"`/`"Rare"`. Rank by distance with `unit.x`/`unit.y`. |
 | `game.tech(id)` | A research topic of the loaded tech tree: `{ id, lab, eden_cost, plymouth_cost, max_scientists, requires }`, or nil for a topic the tree hasn't. `lab` is 1 Basic, 2 Standard, 3 Advanced, 0 none (a free topic); a cost of -1 means not for that colony; `requires` lists the topic ids that must be researched first. |
 | `game.map_sound(name_or_id, at)` | Play a sound at a map location. |
 
-Sound names include the Savant voice lines (`WeAreUnderAttack`, `EnemyUnitSighted`,
-`ColonyUnderAttack`, `NewMissionObjective`, ...) and `Beep2/5/6/8/9`; any other sound can be passed
-as a raw integer SoundID.
+Sound names: the Savant voice lines (`StructureCompleted`, `ResearchCompleted`, `ColonyUnderAttack`,
+`WeAreUnderAttack`, `VehicleReady`, `ConsumerItemsCompleted`, `StructureKitManufactured`, `SpiderReady`,
+`ScorpionReady`, `StructureDestroyed`, `VehicleDestroyed`, `DatabaseReconstructed`, `EnemyUnitSighted`,
+`VehicleRepaired`, `StructureRepaired`, `MissileLaunchDetected`, `IncomingMissile`, `MoraleExcellent`,
+`MoraleGood`, `MoraleFair`, `MoralePoor`, `MoraleTerrible`, `FoodSurplus`, `FoodDiminishing`, `PeopleStarving`,
+`PowerOptimal`, `PowerMarginal`, `PowerShortage`, `NewMissionObjective`, `EdwardDeployed`,
+`SolarSatelliteDeployed`, `RocketLaunched`, `RLVLaunched`, and the game's names `Savant2` to `Savant18`), the
+beeps `Beep2`/`Beep5`/`Beep6`/`Beep8`/`Beep9`, `Message2` and `BuildingExplosion`. Any other sound can be
+passed as a raw integer SoundID. An unknown name plays sound 0.
 
 **Map, terrain & placement (how the AI "sees" the map)**
 
 | Call | Effect |
 |---|---|
 | `game.map_size()` | `{ w, h }` playable tile dimensions (author coords run `1..w` / `1..h`). |
-| `game.cell(x, y)` | Read a tile: `{ passable, cliff, lava, blocked, type }` (terrain + whether a wall/building occupies it). |
+| `game.cell(x, y)` | Read a tile: `{ passable, cliff, lava, blocked, type }` (terrain + whether a wall/building occupies it). Takes two numbers, not a table; an `x`, `y` off the map is wrapped onto it. |
 | `game.can_place(x, y)` | Is a structure tile buildable here? (passable, not occupied, not lava). |
-| `game.find_place(near, type)` | `{x,y}` of a clear spot near `near` (a `Unit`/`Region`/`{x,y}`) to place `type`, or nil. |
-| `game.find_build_site(type, from [, maxR])` | `{x,y}` build anchor near `from` where the **whole footprint** (incl. clearance) is buildable, or nil (also for a type that isn't a structure). Feed straight to `unit:build`. |
+| `game.find_place(near, type)` | `{ x =, y = }` of a clear spot near `near` (any location) to place `type`, or nil. |
+| `game.find_build_site(type, from [, maxR])` | `{ x =, y = }` build anchor (the building's bottom-right core tile, where `unit:build` puts it) within `maxR` tiles of `from` (default 30) where the **whole footprint** (incl. clearance) is buildable, or nil (also for a type that isn't a structure). Feed straight to `unit:build`. |
 | `game.footprint(type)` | `{ w, h, tw, th }` - a structure's core size and total size (with the 1-tile build border); nil for a type that isn't a structure. |
 
 > With these the AI reads its surroundings (`beacons` for mines, `cell`/`can_place` for terrain,
 > `find_build_site`/`footprint` for placement) instead of being told where things are - drop it on any
-> map and it works it out. See `docs/AI-DESIGN.md`.
+> map and it works it out (the `ai-sandbox` and `cold-front` samples do).
 
 **Map features (create set-pieces at runtime)**
 
 | Call | Effect |
 |---|---|
-| `game.create_wall(type, area)` / `game.create_tube(area)` | Build walls (`"Wall"`/`"LavaWall"`/`"MicrobeWall"`) or tubes over a tile/rect/region. |
-| `game.create_marker(at [, type])` | A map decal (`"Circle"` default, `"DNA"`, `"Beaker"`); returns a `Unit`. |
-| `game.create_wreckage(at, techId [, discovered])` | Wreckage that grants a tech when returned to a Spaceport (techId 8000-12095). |
+| `game.create_wall(type, area)` / `game.create_tube(area)` | Build walls (`"Wall"`/`"LavaWall"`/`"MicrobeWall"`, or `"Tube"`) or tubes over an area. |
+| `game.create_marker(at [, type])` | A map decal (`"Circle"` default, `"DNA"`, `"Beaker"`; any other name is a Circle); returns a `Unit`. |
+| `game.create_wreckage(at, techId [, discovered])` | Wreckage that grants a tech when returned to a Spaceport (techId 8000-12095). `discovered` defaults to false. |
 | `game.create_beacon{ at=, type=, ore=, yield=, variant= }` | A mining beacon (or `"MagmaVent"` / `"Fumarole"`) made at runtime, with placement's names (`ore` Common/Rare/Random, `yield` Bar3/Bar2/Bar1/Random, `variant` High/Mid/Low/Random). For beacons a mission decides when it starts, e.g. a yield rolled with `game.rand`; fixed ones belong in placement. |
 
-**Disasters & environment** (each `create_*` returns the disaster `Unit`; a trailing `true` triggers it immediately rather than after a warning)
+**Disasters & environment** (each `create_*` but `create_blight` returns the disaster `Unit`; `now = true` triggers it immediately rather than after a warning. The arguments are positional, so `now` comes after every argument before it: `game.create_meteor(at, -1, true)`.)
 
 | Call | Effect |
 |---|---|
-| `game.create_meteor(at [, size] [, now])` | Meteor strike. `size`: 0 large, 1 medium, 2 small, -1 random. |
+| `game.create_meteor(at [, size] [, now])` | Meteor strike. `size`: 0 large, 1 medium, 2 small, -1 random (the default). |
 | `game.create_earthquake(at, magnitude [, now])` | Earthquake. |
 | `game.create_eruption(at, spreadSpeed [, now])` | Volcanic eruption (lava). |
 | `game.create_lightning(from, to, duration [, now])` | Electrical storm along a path. |
 | `game.create_tornado(from, to, duration [, now])` | Vortex along a path. |
-| `game.create_blight(at [, spreadSpeed])` / `game.unset_blight(at)` | Add / remove the Blight. |
+| `game.create_blight(at [, spreadSpeed])` / `game.unset_blight(at)` | Add / remove the Blight (`spreadSpeed` default -1, the game's own). The Blight is a map effect, not a unit: nothing is returned. |
 | `game.set_lava_speed(n)` / `game.set_blight_speed(n)` | Spread speeds. |
 | `game.set_lava_possible(area [, on])` | Mark tiles as lava-passable so an eruption's flow can reach them (carve a channel). `on` defaults to true. |
 | `game.tile(at)` / `game.set_tile(at, index)` | A tile's graphic, as its index in the map's tile mappings (what a map editor shows). The stock lava maps swap in volcano tiles before an eruption. |
 | `game.units_in_range(at, range)` | The units within `range` tiles of `at`, as the game's `InRangeEnumerator` finds them. |
-| `game.units_in_rect(rect)` | The units of every player in the rectangle `{x1, y1, x2, y2}`, as the game's `InRectEnumerator` finds them. |
+| `game.units_closest(at [, count])` | The units of every player in the order the game's `ClosestEnumerator` gives them: nearest `at` first by the game's own measure (not a plain distance sort), at most `count` of them (default all). For walking the units nearest a spot as a mission DLL does. |
+| `game.units_in_rect(area)` | The units of every player in the area (a rectangle `{x1, y1, x2, y2}`, a point, a `Region`), as the game's `InRectEnumerator` finds them. |
 | `game.set_music(songs [, repeat_from])` | The music playlist: the game's song numbers in order, and the position (1-based) it starts again from once played through (`TethysGame::SetMusicPlayList`). |
 | `game.player(n)` | The `Player` of slot `n` (1-7), whether or not the lobby has it: a mission's own computer player beyond the lobby's (the game's player 6, say) is `game.player(7)`. |
 | `game.set_required_tech(type, tech)` | The topic a unit type (a name or raw MapID) needs before anyone can build it, to gate units behind a mission's own topics. |
+| `game.force_robot_command(on)` | Every player's robot units work without a Robot Command Center (the game's `forceEnableRCC` flag), for a mission that takes the RCC away. It changes the rules, so every machine of a multiplayer game must call it alike (from the script). |
+| `game.clear_cheated()` | Clears the game's record of a game-option change, which a mission's forced morale (`game.morale_steady`) sets, so the game isn't marked "CHEATED GAME!". |
 | `game.set_tech_cost(tech, cost)` | A topic's research cost for Eden and Plymouth; `-1` makes it impossible to research. |
-| `game.rand_point(rect)` | A tile `{ x, y }` drawn in `{x1, y1, x2, y2}` by the game's own `MAP_RECT::RandPt`, so the game's random numbers go as a stock mission's do. |
+| `game.rand_point(area)` | A tile drawn in the area by the game's own `MAP_RECT::RandPt`, so the game's random numbers go as a stock mission's do. The tile is a positional `{ x, y }`: read it as `p[1]`, `p[2]` (it goes straight to `at =`). |
 | `game.create_emp_missile(target, from, player)` | An EMP missile of `player` flying from `from` to `target` (`TethysGame::SetEMPMissile`). |
 | `game.wreckage()` | The wreckage on the map (the gaia player's), as a stock mission walks it. |
 | `game.find_emp_missile_target(rect, player)` | The tile the game picks for an EMP missile aimed at `player` in the rectangle (`TethysGame::FindEMPMissleTarget`), as `{ x =, y =, raw = true }`: the game's own tile, so a launch aims at `x * 32, y * 32` (`unit:launch_at_pixel`). |
 | `game.initial_set_tile(at, index)` / `game.set_cell_type(at, type)` | A setup's own map edits: a tile set as the map loads (`GameMap::InitialSetTile`), and a tile's cell type (the game's `CellType` number). Tutorial 5 uses both. |
-| `game.disasters_enabled()` | Whether disasters are enabled for this game. Returns **false** in Colony Games (no disasters toggle there - only Difficulty), so a colony mission that wants disasters must call them directly / force its director. Reflects the host's real choice in multiplayer/skirmish. |
+| `game.disasters_enabled()` | Whether the game has disasters on (`TethysGame::CanHaveDisasters`): in multiplayer, the lobby's Disasters setting. A Colony game reads false (its menu has no such setting), so a colony mission that wants disasters calls `create_*` without asking. |
 | `game.set_daylight_everywhere(on)` / `game.set_daylight_moves(on)` | Full daylight / day-night cycle. |
 | `game.set_initial_light_level(position)` | Where the day/night band starts, as the stock missions set it (e.g. `-32`); with `set_daylight_moves(false)` it stays there. |
 
@@ -172,30 +195,31 @@ The game's own triggers, as the stock missions make them. The game checks them e
 every machine alike, and judges each player on their own, so they are the multiplayer-safe way to
 say "a player has done X". Each takes a table of its fields plus, all optional: `on` (a function
 called with the Trigger when it fires), `one_shot` (fire once, or every time the condition holds) and
-`enabled` (`false` makes it off until `:enable()`). `compare` is one of `"=="`, `"<="`, `">="`
-(the default), `"<"`, `">"`; `player` is a Player or 1-based number, and left out means any player.
+`enabled` (`false` makes it off until `:enable()`). `compare` is one of `"=="` (or `"="`), `"<="`, `">="`
+(the default), `"<"`, `">"`; any other value is `">="`, with a warning. `player` is a Player or 1-based
+number, and left out means any player.
 
 | Call | Fires when |
 |---|---|
 | `trigger.count{type=, cargo=, compare=, count=1, player=}` | A player has `count` units of `type` (with `cargo`: a ConVec's kit or a weapon; a number as a stock mission passes it, a Cargo Truck's truck cargo: 1 food, 4 Common Metal, 5 Rare Metal, 9 wreckage). Space Race: `type="IonDriveModule"`. |
-| `trigger.resource{resource=, compare=, amount=, player=}` | A colony value: `"Food"`, `"CommonOre"`, `"RareOre"`, `"Kids"`, `"Workers"`, `"Scientists"`, `"Colonists"`, or `"Ore"` (the game's resource 7, which the stock Labyrinth waits on). |
-| `trigger.set{t1, t2, ..., needed=#list}` | `needed` of the listed triggers (1 to 8) have fired for a player. |
-| `trigger.midas{time=}` | Tick `time` comes, for the player with the most ore in storage (Midas). |
+| `trigger.resource{resource="CommonOre", compare=, amount=0, player=}` | A colony value: `"Food"`, `"CommonOre"`, `"RareOre"`, `"Kids"`, `"Workers"`, `"Scientists"`, `"Colonists"`, or `"Ore"` (the game's resource 7, which the stock Labyrinth waits on). |
+| `trigger.set{t1, t2, ..., needed=#list}` | `needed` of the listed triggers (1 to 8) have fired for a player. With none or more than 8 it makes nothing (an invalid Trigger, and a warning in the log). |
+| `trigger.midas{time=25000}` | Tick `time` comes, for the player with the most ore in storage (Midas). |
 | `trigger.one_player_left{}` | One player is left (the Last One Standing condition). |
-| `trigger.operational{type=, compare=, count=1, player=}` | A player's working structures of `type` (`player` needed). Land Rush: a Command Center. |
-| `trigger.vehicle_count{compare=, count=, player=}` | A player's vehicles, all types. |
-| `trigger.building_count{compare=, count=, player=}` | A player's structures, all types. |
-| `trigger.escape{at=, width=, height=, type=, count=1, cargo=-1, amount=-1, player=}` | At least `count` units of `type` (with a truck cargo and amount) in the rectangle from `at`: the campaign's evacuations. |
+| `trigger.operational{type="CommandCenter", compare=, count=1, player=}` | A player's working structures of `type` (`player` needed). Land Rush: a Command Center. |
+| `trigger.vehicle_count{compare=, count=1, player=}` | A player's vehicles, all types. |
+| `trigger.building_count{compare=, count=1, player=}` | A player's structures, all types. |
+| `trigger.escape{at=, width=1, height=1, type=, count=1, cargo=-1, amount=-1, player=}` | At least `count` units of `type` (with a truck cargo and amount) in the rectangle from `at`: the campaign's evacuations. |
 | `trigger.kit{type=, count=1, player=}` | ConVecs carrying at least `count` kits of a structure. |
-| `trigger.point{at=, player=}` / `trigger.rect{at=, width=, height=, player=}` | A vehicle of the player on the tile / in the rectangle. |
+| `trigger.point{at=, player=}` / `trigger.rect{at=, width=1, height=1, player=}` | A vehicle of the player on the tile / in the rectangle. |
 | `trigger.evac{player=}` | The game's evacuation objective (enough Evacuation Transports). |
 | `trigger.damaged{group=, damage=1}` | A share of a fight group destroyed: 1 all, 2 three quarters, 3 half. |
-| `trigger.special_target{target=unit, type="Scout", one_shot=true}` | A unit of `type` next to `target` (the campaign's lab visits); `t:special_target_unit()` gives the unit that came, `unit:clear_special_target()` ends a unit's being one. |
+| `trigger.special_target{target=unit, type="Scout", one_shot=true}` | A unit of `type` next to `target` (the campaign's lab visits); `t:special_target_unit()` gives the unit that came (an invalid Unit, `.valid` false, before one has), `unit:clear_special_target()` ends a unit's being one. |
 | `trigger.research{tech=, player=}` | A player has researched the topic `tech` (its id). |
 | `trigger.time{time=}` or `{min=, max=}` | `time` ticks pass, or a time the game draws once between `min` and `max` when the trigger is made. With `one_shot = false`, every that long. |
 
-One-shot defaults are the game's: on for `midas`, `one_player_left`, `operational` and `time`, off
-for the rest. A **Trigger** has `.id`, `.valid`, `.enabled`, `:enable()`, `:disable()`,
+One-shot defaults are the game's: on for `midas`, `one_player_left`, `operational`, `special_target` and
+`time`, off for the rest. A **Trigger** has `.id`, `.valid`, `.enabled`, `:enable()`, `:disable()`,
 `:has_fired(player)` and `:destroy()` (ends it; its `on` function is forgotten).
 
 ```lua
@@ -233,13 +257,14 @@ Coordinates are author coords, as everywhere; rectangles are `{x1, y1, x2, y2}`.
 | Call | |
 |---|---|
 | `ai.building_group(player)` / `ai.fight_group(player)` / `ai.mining_group(player)` | A new group of that player's, as a `Group`. |
-| `ai.unit_block{ {type=, at=, direction=, weapon=}, ... }` | A table of units (the stock missions' `UnitRecord` arrays), for `add_units` and `record_unit_block`. `rotation=` (0-255) instead of `direction` for a heading in between; `classification=` the record's class (default 16, `NotSet`). |
-| `block:create_units(player [, lights])` | Makes the block's units for `player`, in no group, as `TethysGame::CreateUnitBlock` makes a mission's exported table (CES1's computer base); returns how many. |
+| `ai.unit_block{ {type=, at=, direction=, weapon=}, ... }` | A table of units (the stock missions' `UnitRecord` arrays), for `add_units` and `record_unit_block`. `direction` defaults to East; `rotation=` (0-255) instead of `direction` for a heading in between; `cargo=` and `amount=` a Cargo Truck's load; `classification=` the record's class (default 16, `NotSet`). |
+| `block:create_units(player [, lights])` | Makes the block's units for `player` (lights off unless `lights` is true), in no group, as `TethysGame::CreateUnitBlock` makes a mission's exported table (CES1's computer base); returns how many. |
 | `player:set_default_group(group)` | The group the player's new units join when no other takes them. |
 | `player:default_group()` | That group as the game keeps it: the fight group it makes for each player at the start, unless a mission set another. |
 
-**Any group:** `.id`, `.kind` (`"Building"` / `"Fight"` / `"Mining"`), `.valid`, `:units()`,
-`:unit_count()`, `:first_of_type(type[, weapon])`, `:take_unit(unit)`, `:remove_unit(unit)`,
+**Any group:** `.id`, `.kind` (`"Building"` / `"Fight"` / `"Mining"`, or `"Plain"` for a group the game
+hasn't, e.g. the `default_group()` of a player without one), `.valid`, `:units()`, `:unit_count()`,
+`:first_of_type(type[, weapon])` (nil when there is none), `:take_unit(unit)`, `:remove_unit(unit)`,
 `:take_all_units(other)` (every unit of `other` moves here),
 `:set_targ_counts(block)` (as many of each unit as the block has),
 `:add_units(block)` (makes the block's units for the group's player, into the group, up to 32),
@@ -293,7 +318,7 @@ looks for the DLL, even when it is in the game folder.
 | `hackaray.load()` | Looks for `Hackaray.dll` in the game folder (once per mission). True when it's there with both functions below. |
 | `hackaray.nuke_patch(on)` | The Spaceport can build and launch the nuclear missile (`true`), or not (`false`). True when done; false when the DLL is missing or refused. |
 | `hackaray.end_videos(win_avi, lose_avi)` | The videos played when the mission is won or lost (e.g. `"CES.avi"`, `"MPUW.avi"`); `end_videos()` turns them off. False when the DLL is missing. |
-| `hackaray.end_videos{ eden = { win, lose }, plymouth = { win, lose } }` | The same, the pair picked by the colony of the player at each machine. |
+| `hackaray.end_videos{ eden = { win, lose }, plymouth = { win, lose } }` | The same, the pair picked by the colony of the player at each machine. Without a pair for that colony (or with one name only), the videos are turned off. |
 
 Calling `nuke_patch` or `end_videos` before `hackaray.load()` is an error. Whatever the mission switched on is
 switched off, and the library freed, when the mission is unloaded.
@@ -319,15 +344,15 @@ shown on each player's own screen.
 | Member | |
 |---|---|
 | `unit.id` | Internal id. |
-| `unit.type` / `unit.type_id` | Type name (e.g. `"Tiger"`) / raw `MapID` integer. |
+| `unit.type` / `unit.type_id` | Type name (e.g. `"Tiger"`; see *Names*) / raw `MapID` integer. |
 | `unit.alive` / `unit.valid` | Liveness. |
-| `unit.owner` | Owner player (0-based). |
+| `unit.owner` | Owner player, **0-based** (the game's own number): `players[unit.owner + 1]` is its `Player`. |
 | `unit.x` / `unit.y` | Tile position in author / status-bar coords (round-trips: feed `{x,y}` back to move/build). |
 | `unit.ore` | A mining beacon's ore type (`"Common"`/`"Rare"`); `""` otherwise. |
 | `unit.hp` / `unit.max_hp` / `unit.health` | Hit points now / max / fraction `0..1`. |
-| `unit.weapon` | Weapon turret type name (`"Laser"`, `"None"`, ...). On a Guard Post, `"Starflare"` and `"Supernova"` are its turret versions; any call that takes a weapon picks the right one for the unit. |
+| `unit.weapon` | Weapon turret type name (`"Laser"`, ...; `"None"` without one). A Guard Post's `"Starflare"` / `"Supernova"` is its own turret version (`StarflareGP` / `SupernovaGP`, as the stock missions make it); every call that takes a weapon picks the version for the unit it goes on. |
 | `unit.cargo` / `unit.cargo_amount` | A Cargo Truck's load (type name + quantity). |
-| `unit.kit` | The structure kit a ConVec is carrying (type name). |
+| `unit.kit` | The structure kit a ConVec is carrying (type name; `"None"` without one). |
 | `unit.command` | Current command (raw int). |
 | `unit.is_building` / `unit.is_vehicle` / `unit.is_factory` / `unit.is_offensive` | Classification. |
 | `unit.lights` | A vehicle's headlights are on (the game's own flag, set by the player or `set_lights`). |
@@ -336,19 +361,19 @@ shown on each player's own screen.
 | `unit.dirt_prevention` | A building's DIRT damage prevention through its tube connection, in hundredths of a percent (`2500` = 25%); 0 when not connected. |
 | `unit.double_fire_rate` / `unit.eden` | Read and set: the unit fires twice as often (the Tiger's flag); the unit counts as Eden-made, which picks Eden's art. |
 | `unit.busy` / `unit.is_emped` / `unit.is_infected` | Activity / status effects. `busy` is the game's `Unit::IsBusy`: the unit has a command (a Spaceport until its rocket is built). |
-| `unit.research_topic` | The tech id a lab is researching; nil when it isn't researching. |
-| `unit.producing` / `unit.progress` | The type a factory is making (a vehicle, or a kit at the Structure Factory) and how far along it is, `0..1`; both nil when it makes nothing. |
-| `unit.target` | The unit a vehicle's attack order is aimed at; nil without one (also for an attack on the ground, or once the target is destroyed). |
 | `unit.object_on_pad` | Spaceport: the rocket on its pad (`"EMPMissile"`, ...), or `"None"`. |
 | `unit.occupied_bay` | Garage, Structure Factory, Spaceport: a bay holds something. |
 | `unit.is_discovered` | Wreckage: the player has found it. |
+| `unit.research_topic` | The tech id a lab is researching; nil when it isn't researching. |
+| `unit.producing` / `unit.progress` | The type a factory is making (a vehicle, or a kit at the Structure Factory) and how far along it is, `0..1` (0 until the factory has started on it); both nil when it makes nothing. |
+| `unit.target` | The unit a vehicle's attack order is aimed at; nil without one (also for an attack on the ground, or once the target is destroyed). |
 
 **Orders & actions (methods)**
 
 | Method | |
 |---|---|
-| `unit:move(loc)` | Move to a location/region (no attacking). |
-| `unit:attack_move(target)` | Unit target → hunt & attack it; location/region → advance there, firing en route. |
+| `unit:move(loc)` | Move to a location (any form). An armed unit still fires at enemies in range on the way. |
+| `unit:attack_move(target)` | The same as `attack`: a Unit target → hunt and attack it; a location → attack the ground there (see *Gotchas*). |
 | `unit:attack(target)` | Attack a specific unit (or attack the ground at a location). |
 | `unit:guard(other)` / `unit:stand_ground(loc)` | Defensive: guard a unit / hold a position. |
 | `unit:stop()` | Cancel the current order. |
@@ -359,7 +384,7 @@ shown on each player's own screen.
 | `unit:damage(n)` / `unit:heal(n)` | Inflict / repair `n` hit points (`damage` past max kills it). |
 | `unit:kill()` / `unit:self_destruct()` / `unit:remove()` | Die (explosion) / self-destruct / vanish silently. |
 | `unit:transfer(player)` | Give the unit to another player (`Player` or 1-based number). |
-| `unit:set_cargo(type [, amount])` | Set a Cargo Truck's load, e.g. `:set_cargo("RareMetal", 1000)`. |
+| `unit:set_cargo(type [, amount])` | Set a Cargo Truck's load, e.g. `:set_cargo("RareMetal", 1000)` (`amount` defaults to 1000; an unknown cargo name does nothing). |
 | `unit:set_kit(structure [, topping])` | Load a ConVec's structure kit (then `build` it). |
 | `unit == other` | Identity. |
 
@@ -377,7 +402,7 @@ shown on each player's own screen.
 | `unit:dock(structure)` / `unit:dock_at_garage(garage)` | Dock a vehicle (e.g. ConVec at a factory to load a kit). |
 | `unit:put_in_garage(bay, at)` | Park a vehicle at once in bay 1-6 of the Garage whose dock tile is `at` (the game's `Unit::PutInGarage`, as a mission's setup parks one). |
 | `structure:unit_on_dock()` | The vehicle currently on a structure's dock, or nil (use to know a ConVec has finished docking). |
-| `structure:dock_location()` | The dock tile `{x,y}` of a structure (drive a ConVec here to load). |
+| `structure:dock_location()` | The dock tile `{ x =, y = }` of a structure (drive a ConVec here to load), or nil for one without a dock. |
 | `unit:mining_route(mine, smelter)` | Cargo Truck: run an ore route between a mine and smelter. |
 | `unit:load_cargo()` / `unit:unload_cargo()` / `unit:dump_cargo()` | Cargo Truck load/unload/dump. |
 | `unit:repair(other)` / `unit:dismantle(other)` / `unit:reprogram(other)` | ConVec repair/dismantle; Spider reprogram. |
@@ -395,18 +420,20 @@ shown on each player's own screen.
 |---|---|
 | `unit:produce(type [, weapon])` | Vehicle/Structure Factory: queue a unit or kit. |
 | `unit:develop(type)` | Spaceport: build a rocket or its cargo (`"EMPMissile"`, `"SolarSatellite"`, a starship module...). |
-| `unit:set_factory_cargo(bay, type [, extra])` / `unit:transfer_cargo(bay)` | Preload a kit into bay `1..6` / move cargo to a bay. |
+| `unit:set_factory_cargo(bay, type [, extra])` / `unit:transfer_cargo(bay)` | Preload a kit into bay `1..6` (`extra`: a Guard Post kit's weapon, picked for the Guard Post as `unit.weapon` describes) / move a bay's kit to the docked vehicle. |
 | `unit:factory_cargo(bay)` | Read the kit type name in a 1-based factory bay (`"None"` if empty). |
-| `unit:research(techId [, scientists])` | Lab: begin researching a tech. |
+| `unit:research(techId [, scientists])` | Lab: begin researching a tech, with `scientists` (default 1). |
 | `unit:train_scientists(n)` | University: train scientists. |
 | `unit:idle()` / `unit:unidle()` | Idle / un-idle a building. |
 
-> `area` (for `build_wall`/`remove_wall`/`doze`/`salvage`) is a `Region`, a `{x1,y1,x2,y2}` rect, or a
-> single `{x,y}` tile.
+> `area` (for `build_wall`/`remove_wall`/`doze`/`salvage`) takes the area forms under *Coordinates*.
 >
-> Orders are issued one tick after you call them - a freshly created unit can't be commanded the same
-> tick. This is automatic. The commands that touch OP2's pathfinder are crash-guarded: a bad unit state
-> logs a warning and is skipped rather than taking the game down.
+> Orders go out at once, as a mission DLL's `DoMove` / `DoAttack` do. The one exception: a unit made this
+> tick or the last (by `create_unit` or any other way) can't take a `move`, `attack_move` or `attack` yet, so
+> that order is held until it can (about 25 ticks); a newer such order replaces one still held. A `move` to a
+> tile off the game's grid is ignored and the unit keeps its order, as the game's `Unit::DoMove` does. The
+> commands that touch OP2's pathfinder are crash-guarded: a bad unit state logs a warning and is skipped
+> rather than taking the game down.
 >
 > Loading a ConVec from the Structure Factory: `dock(sf)` it, wait until `sf:unit_on_dock()` is that
 > ConVec, then `set_kit(kind)` to load the kit (and `set_factory_cargo(bay, "None")` to take it from
@@ -416,6 +443,9 @@ shown on each player's own screen.
 **Cargo types:** `Food`, `CommonOre`, `RareOre`, `CommonMetal`, `RareMetal`, `CommonRubble`,
 `RareRubble`, `Spacecraft`, `Wreckage`, `GeneBank`, `Empty` (aliases: `Ore`, `Metal`, `Rubble`).
 Cargo can also be set in placement: `{ type="CargoTruck", ..., cargo="RareMetal", amount=1000 }`.
+A ConVec's structure kit is set in placement with `kit`:
+`{ type="ConVec", ..., kit="Agridome" }` (optional `kit_topping` for a kit's payload, e.g. a Guard
+Post kit's weapon).
 
 ## Player
 
@@ -424,7 +454,7 @@ Cargo can also be set in placement: `{ type="CargoTruck", ..., cargo="RareMetal"
 | `player.is_eden` / `player.is_plymouth` | Faction. |
 | `player.is_human` / `player.is_ai` | Control. |
 | `player:owns_any(type)` | `true` if the player owns >=1 unit of `type`. |
-| `player:reset_checks()`, `player:can_build_building()`, `can_build_vehicle([arg])` (the stock missions pass 1), `can_build_space()`, `can_accumulate_ore()`, `can_accumulate_rare_ore()`, `can_do_research(tech)` | The game's own checks of what the colony can still do (the stock colony games fail a colony that can't). The game caches them: call `reset_checks()` first. `can_do_research` is false for a tech id the game doesn't have. |
+| `player:reset_checks()`, `player:can_build_building()`, `can_build_vehicle([arg])` (default 0; the stock missions pass 1), `can_build_space()`, `can_accumulate_ore()`, `can_accumulate_rare_ore()`, `can_do_research(tech)` | The game's own checks of what the colony can still do (the stock colony games fail a colony that can't). The game caches them: call `reset_checks()` first. `can_do_research` is false for a tech id the game doesn't have. |
 | `player:total_strength()` | The game's measure of the player's military (`GetTotalPlayerStrength`). |
 | `player:unit_count(type)` | Count of that type. |
 | `player:units([type])` | List of the player's units (all, or filtered to one `type`) - order them as a group. |
@@ -441,10 +471,11 @@ Cargo can also be set in placement: `{ type="CargoTruck", ..., cargo="RareMetal"
 | `player.food_net` | The food stored's change over the colony's last food update (read-only; the game updates food every 256 ticks). Negative: the colony eats more than it grows. |
 | `player.ore_capacity` / `player.rare_ore_capacity` | How much common and rare ore the colony can store (read-only), as the game's last update worked it out; the game cuts `player.ore` / `player.rare_ore` down to these at each colony update (every 256 ticks). |
 | `player:cost(type [, weapon])` | What `type` costs this player's colony, `{ common =, rare = }` (ore), with a turret `weapon`'s cost added for a vehicle or Guard Post; nil for an unknown type. Research that changes a cost is included. |
-| `player.difficulty` | The Colony Games menu difficulty as `"Easy"`/`"Normal"`/`"Hard"` (read-only). Read it off the human player to self-tune a mission per difficulty. |
-| `player:unit_stat(type, field)` / `player:set_unit_stat(type, field, value)` | The player's stats for a unit type (a name, or a raw MapID number to walk a range of types), the record the tech tree's upgrades change: `"hp"`, `"repair"`, `"armor"` (raw: 256, 180, 130, 90, 60, 40 for classes 0-5), `"common_cost"`, `"rare_cost"`, `"build_time"`, `"sight_range"`; vehicles `"move_speed"`, `"turn_rate"`, `"production_rate"`, `"reload_time"`, `"cargo_capacity"`; weapons `"concussion"`, `"penetration"`, `"reload_time"`, `"weapon_range"`; buildings `"power"`, `"workers"`, `"scientists"`, `"storage"`, `"production_capacity"`, `"storage_bays"`. In a multiplayer game, change them the same way on every machine (from the script, not from one player's input). |
+| `player.difficulty` | The Colony Games menu difficulty as `"Easy"`/`"Normal"`/`"Hard"` (`"Unknown"` for any other value; read-only). Read it off the human player to self-tune a mission per difficulty. |
+| `player:unit_stat(type, field)` / `player:set_unit_stat(type, field, value)` | The player's stats for a unit type (a name, or a raw MapID number to walk a range of types), the record the tech tree's upgrades change: `"hp"`, `"repair"`, `"armor"` (raw: 256, 180, 130, 90, 60, 40 for classes 0-5), `"common_cost"`, `"rare_cost"`, `"build_time"`, `"sight_range"`; vehicles `"move_speed"`, `"turn_rate"`, `"production_rate"`, `"reload_time"`, `"cargo_capacity"`; weapons `"concussion"`, `"penetration"`, `"reload_time"`, `"weapon_range"`; buildings `"power"`, `"workers"`, `"scientists"`, `"storage"`, `"production_capacity"`, `"storage_bays"`. In a multiplayer game, change them the same way on every machine (from the script, not from one player's input). An unknown type, field or player reads 0 (and logs an error). |
 | `player:unmark_research(tech)` | The player no longer has the topic (the opposite of `mark_research`). |
 | `player:satellite_count(type)` | How many of a satellite or launched Spaceport cargo rocket the player has - e.g. `"EDWARDSatellite"`, `"RareMetalsCargo"`, `"CommonMetalsCargo"`, `"FoodCargo"`, `"EvacuationModule"`. Drives Starship-colony evacuation victories. |
+| `player:set_launched(type, on)` | Marks a starship module or cargo (`IonDriveModule` ... `ChildrenModule`, the `Skydock` among them) launched or not, for a mission that starts with the starship in orbit; `satellite_count(type)` reads it back. Any other type is an error. |
 | `player.edward_satellites` | EDWARD Satellites in orbit (0-15), read and set. With one up, every mining beacon counts as surveyed for the player, so its Robo-Miners need no Robo-Surveyor. |
 | `player.solar_satellites` | Solar Power Satellites in orbit (0-15), read and set. |
 
@@ -468,6 +499,71 @@ if diff == "Hard" then players[2].ore = 6000 end
 | `player:go_eden()` / `player:go_plymouth()` | Set faction at runtime. |
 | `player:go_human()` / `player:go_ai()` | Set control at runtime. |
 | `player:center_view(loc)` | Center the camera (only affects the local player). |
+
+A tech id the loaded tree hasn't (in `has_tech`, `mark_research`, `unmark_research`, `research`,
+`set_tech_cost`, `set_required_tech`) is refused rather than passed to the game, which would crash on it: the
+call logs an error and posts an in-game message, and `has_tech` gives false.
+
+**Reading the colony (computer players).** The queries above read the game's own state, so
+a script that plays a colony decides from what a player would see in the panes, and every machine of a
+multiplayer game reads the same:
+
+```lua
+local me = players[2]
+local function affordable(type, weapon)
+  local c = me:cost(type, weapon)
+  return c ~= nil and me.ore >= c.common and me.rare_ore >= c.rare
+end
+
+for _, f in ipairs(me:units("VehicleFactory")) do
+  if f.enabled and f.producing == nil and affordable("Lynx", "Laser") then f:produce("Lynx", "Laser") end
+end
+if me.power < 60 then log.ai("power is short: " .. me.power) end
+
+-- The next topic toward a goal, at a lab of the right type.
+local function next_topic(goal)
+  if me:has_tech(goal) then return nil end
+  if me:can_research(goal) then return goal end
+  for _, id in ipairs(game.tech(goal).requires) do
+    local t = next_topic(id)
+    if t then return t end
+  end
+end
+local LABS = { "BasicLab", "StandardLab", "AdvancedLab" }
+local topic = next_topic(3851)   -- multitek.txt's Lynx topic
+local info = topic and game.tech(topic)
+if info and LABS[info.lab] then
+  for _, lab in ipairs(me:units(LABS[info.lab])) do
+    if lab.research_topic == nil then lab:research(topic, math.min(info.max_scientists, me.scientists)); break end
+  end
+end
+```
+
+## Names
+
+Units, weapons and the rest go by these names everywhere (`type=`, `weapon=`, `unit.type`, ...); an unknown name
+is no unit at all (`create_unit` makes nothing, `owns_any` is false).
+
+- **Vehicles:** `CargoTruck`, `ConVec`, `Spider`, `Scorpion`, `Lynx`, `Panther`, `Tiger`, `RoboSurveyor`,
+  `RoboMiner`, `GeoCon`, `Scout`, `RoboDozer`, `EvacuationTransport`, `RepairVehicle`, `Earthworker`,
+  `SmallCapacityAirTransport`.
+- **Structures:** `CommonOreMine`, `RareOreMine`, `GuardPost`, `LightTower`, `CommonStorage`, `RareStorage`,
+  `Forum`, `CommandCenter`, `MHDGenerator`, `Residence`, `RobotCommand`, `TradeCenter`, `BasicLab`,
+  `MedicalCenter`, `Nursery`, `SolarPowerArray`, `RecreationFacility`, `University`, `Agridome`, `DIRT`,
+  `Garage`, `MagmaWell`, `MeteorDefense`, `GeothermalPlant`, `ArachnidFactory`, `ConsumerFactory`,
+  `StructureFactory`, `VehicleFactory`, `StandardLab`, `AdvancedLab`, `Observatory`, `ReinforcedResidence`,
+  `AdvancedResidence`, `CommonOreSmelter`, `Spaceport`, `RareOreSmelter`, `GORF`, `Tokamak`.
+- **Walls and tubes:** `Tube`, `Wall`, `LavaWall`, `MicrobeWall`.
+- **Weapons:** `Laser`, `Microwave`, `RailGun`, `RPG`, `EMP`, `ESG`, `Stickyfoam`, `AcidCloud`,
+  `ThorsHammer`, `Starflare`, `Supernova`, `EnergyCannon`; `None` for no weapon.
+- **Map objects:** `MiningBeacon`, `MagmaVent`, `Fumarole`, `Wreckage`.
+- **Spaceport cargo:** `EMPMissile`, `EDWARDSatellite`, `SolarSatellite`, `IonDriveModule`, `FusionDriveModule`,
+  `CommandModule`, `FuelingSystems`, `HabitatRing`, `SensorPackage`, `Skydock`, `StasisSystems`,
+  `OrbitalPackage`, `PhoenixModule`, `RareMetalsCargo`, `CommonMetalsCargo`, `FoodCargo`, `EvacuationModule`,
+  `ChildrenModule`.
+- **Directions:** `East` (the default), `SouthEast`, `South`, `SouthWest`, `West`, `NorthWest`, `North`,
+  `NorthEast`; any other name is East.
+- **Cargo:** under *Unit* (Cargo types). **Sounds:** under *game.\**.
 
 ## Region
 
@@ -499,7 +595,7 @@ end)
 
 ## Examples
 
-Five complete two-file missions (the demo pack):
+The SDK's `samples/` folder has complete missions (its README lists them all). The five of the demo pack:
 - [`samples/hold-the-line/`](../samples/hold-the-line/) - **defense**: survive escalating waves.
 - [`samples/strike-team/`](../samples/strike-team/) - **offense**: destroy the enemy base.
 - [`samples/the-convoy/`](../samples/the-convoy/) - **escort**: get a cargo truck to the haven,
@@ -529,8 +625,8 @@ A few things are about Outpost 2 itself, not OP2Lua - worth knowing:
 - **Enemy structures only auto-fire at *hostile* players.** That requires the mission's player
   count to be correct (the converter sets it); units owned by an un-initialized player won't be
   treated as enemies even though they exist.
-- **Command units the tick after creation, not the same tick.** Handled automatically - `move`/
-  `attack_move` are deferred one tick - so you can write the obvious thing.
+- **Command units after creation, not the same tick.** Handled automatically - a new unit's `move`/
+  `attack_move`/`attack` is held until it can take it - so you can write the obvious thing.
 - **One command per unit per tick.** A unit keeps only the *last* command issued in a given tick. So
   `u:move(a); u:move(b)` in one tick only does `b`. (Producing one unit at *each of several* factories
   in the same tick is fine - different units.)
@@ -538,13 +634,12 @@ A few things are about Outpost 2 itself, not OP2Lua - worth knowing:
   previous unit is **dropped** (not queued). Spacing onto a different *tick* isn't enough - you must
   space produce calls by **≥ the unit's build time** (~12-15 marks for a vehicle). Use a counter loop,
   one unit per `every(marks(15))` cycle until you've made the target count.
-- **`attack_move` to an empty tile sieges the ground.** For waypoint travel where there may be no enemy
-  at the destination, use `move` - otherwise the unit attacks the bare tile on arrival. Use
-  `attack_move` only when you want it to engage whatever it meets en route.
+- **`attack_move` (or `attack`) to a tile sieges the ground.** For waypoint travel, use `move` (armed
+  units still return fire on the way). Give `attack_move` a Unit to hunt it down.
 
 ## Logs
 
-Up to three files in `Outpost2\OPU\logs\`, each line stamped with the wall-clock time AND the game
+Up to three log files in `Outpost2\OPU\logs\`, each line stamped with the wall-clock time AND the game
 mark (e.g. `02:45:05 m260 [INFO] ...`). Nothing is duplicated between them:
 
 - **`OP2Lua-<MissionDll>.log`** - *your* mission's log: your `print(...)` / `log.mission(...)` debug,
@@ -561,7 +656,7 @@ mark (e.g. `02:45:05 m260 [INFO] ...`). Nothing is duplicated between them:
 | `print(...)` / `log.mission(...)` | the Mission log |
 | `log.ai(...)` | the AI log (+ comms panel if `log.show_ai_in_game(true)`) |
 | `log.show_ai_in_game(on)` | toggle echoing `log.ai` lines to the in-game comms panel (off by default) |
-| `log.ai_status(player)` | (over)writes `OP2Lua-<dll>-AI-status.json` with that player's current resources + unit counts. Call from `every(marks(1), ...)` for a live feed an external tool can poll. |
+| `log.ai_status(player)` | (over)writes `OP2Lua-<dll>-AI-status.json` with that player's current resources + unit counts (`player` is a `Player`, not a number). Call from `every(marks(1), ...)` for a live feed an external tool can poll. |
 
 A crash writes a one-line summary to the Main log and the full register/stack dump to the Mission log,
 so a failure is never hidden but the noise stays in one place.
@@ -595,9 +690,9 @@ The Tug-O-War sample (`samples/tug-o-war/`) is a remake of the stock 2-player La
 OP2 multiplayer runs the mission script on **every** machine in lockstep. The API is built so the
 easy path is the safe path:
 
-- **Use `game.rand`, never `math.random`** - `math.random` isn't available; `game.rand` is synced.
+- **Use `game.rand`** - `math.random` and `math.randomseed` aren't available; `game.rand` is synced.
 - **Use the scheduler (`after`/`every`/`when`), never real time** - there is no clock access.
 - **Iterate the lists the API gives you** - already in a stable, deterministic order.
-- `io`, `os`, and loading external files are disabled in missions.
+- `io`, `os`, `package`/`require`, `dofile`, `loadfile` and `load` are not available in missions.
 
 Stick to the calls here and your mission is multiplayer-safe by construction.

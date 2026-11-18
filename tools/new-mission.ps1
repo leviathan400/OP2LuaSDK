@@ -3,8 +3,9 @@
   Scaffold a new OP2Lua mission: a named mission DLL + skeleton .lua scripts.
 
 .DESCRIPTION
-  Clones the prebuilt mission stub (bin\LuaMission.dll), byte-patches its menu name and map, and
-  writes starter MissionName.lua + MissionName.placement.lua next to it. No compiler required.
+  Clones the prebuilt mission stub (bin\LuaMission.dll) as cMissionName.dll (Outpost 2 lists a DLL whose name
+  starts with c under Colony Games), byte-patches its menu name and map, and writes starter MissionName.lua +
+  MissionName.placement.lua next to it. No compiler required.
   (This is the manual stand-in for the future OP2MissionEditor .opm -> Lua converter.)
 
 .EXAMPLE
@@ -26,9 +27,12 @@ if (-not $OutDir) { $OutDir = Join-Path $sdkRoot "out" }
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
 # Base name = the menu name with non-alphanumerics removed. The DLL base name decides which .lua
-# files it loads (MyMission.dll -> MyMission.lua + MyMission.placement.lua).
+# files it loads: cMyMission.dll -> MyMission.lua + MyMission.placement.lua (the core drops a leading c that
+# comes before a capital); a base that doesn't start with a capital keeps the c in the script names too.
 $base = ($Name -replace '[^A-Za-z0-9]', '')
 if (-not $base) { throw "Name '$Name' has no letters/digits to form a file name." }
+$dllBase = "c$base"
+if ($base -cmatch '^[A-Z]') { $scriptBase = $base } else { $scriptBase = $dllBase }
 
 # --- Patch a fixed char[1024] export string inside the cloned DLL ------------------------------
 function Set-DllString([byte[]] $bytes, [string] $old, [string] $new) {
@@ -67,11 +71,11 @@ $dll = [IO.File]::ReadAllBytes($stub)
 Set-DllString     $dll "OP2Lua mission (unpatched template)" $Name   # menu name (OP2 mission list)
 Set-DllString     $dll "eden01.map" $Map                             # map file
 Set-DllWideString $dll $descPlaceholder $Name                        # Windows file-description = name
-[IO.File]::WriteAllBytes((Join-Path $OutDir "$base.dll"), $dll)
+[IO.File]::WriteAllBytes((Join-Path $OutDir "$dllBase.dll"), $dll)
 
 # --- placement.lua skeleton -------------------------------------------------------------------
 $placement = @"
--- $base.placement.lua  -  $Name  -  starting layout.
+-- $scriptBase.placement.lua  -  $Name  -  starting layout.
 -- Coordinates are the ones shown on the in-game status bar (hover a tile to read them).
 return {
   name = "$Name", map = "$Map", tech = "MULTITEK.TXT", type = "Colony",
@@ -106,7 +110,7 @@ return {
 
 # --- mission.lua skeleton ---------------------------------------------------------------------
 $mission = @"
--- $base.lua  -  $Name  -  mission logic.
+-- $scriptBase.lua  -  $Name  -  mission logic.
 -- See docs/API.md for the full API. Edit freely; this is your mission.
 
 function on_init()
@@ -135,14 +139,14 @@ function on_init()
 end
 "@
 
-Set-Content -Path (Join-Path $OutDir "$base.placement.lua") -Value $placement -Encoding ASCII
-Set-Content -Path (Join-Path $OutDir "$base.lua")           -Value $mission   -Encoding ASCII
+Set-Content -Path (Join-Path $OutDir "$scriptBase.placement.lua") -Value $placement -Encoding ASCII
+Set-Content -Path (Join-Path $OutDir "$scriptBase.lua")           -Value $mission   -Encoding ASCII
 
 Write-Host ""
 Write-Host "Created mission '$Name' in $OutDir :" -ForegroundColor Green
-Write-Host "  $base.dll              (menu name '$Name', map '$Map')"
-Write-Host "  $base.lua              (edit your logic here)"
-Write-Host "  $base.placement.lua    (edit your layout here)"
+Write-Host "  $dllBase.dll    (menu name '$Name', map '$Map')"
+Write-Host "  $scriptBase.lua    (edit your logic here)"
+Write-Host "  $scriptBase.placement.lua    (edit your layout here)"
 Write-Host ""
 Write-Host "Next: copy all three files into your Outpost 2  OPU\maps  folder, then launch the game."
 Write-Host "See ..\INSTALL.md for paths and ..\docs\GETTING-STARTED.md for the walkthrough."

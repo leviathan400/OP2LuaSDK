@@ -74,7 +74,8 @@ The stub also exports the usual mission entry points (`InitProc`, `AIProc`, `Get
 and a do-nothing `OP2LuaTrigger`, which the core's own triggers name.
 
 To change the name, map, type or player count, patch the DLL: OP2LuaEditor's Mission Properties does it, and so
-does `op2lua-newmission` (`--map`, `--type`, `--players`) for a new mission.
+does `op2lua-newmission` (`--map`, `--type`, `--players`; the SDK's older Linux build has `--map` only) for a new
+mission.
 
 ## Coordinates
 
@@ -276,7 +277,7 @@ globals; the core then looks up these callbacks by name, any of which may be lef
 
 | Callback | When |
 |---|---|
-| `on_init()` | Once at the start, after the placement is applied. Return `false` to abort the mission. |
+| `on_init()` | Once at the start, after the placement is applied. Return `false` (or `nil`) to abort the mission; returning nothing carries on. |
 | `on_tick()` | Every game tick, after the scheduled events of that tick. |
 | `on_chat(chat)` | A chat message. |
 | `on_create_unit(unit)`, `on_destroy_unit(unit)` | A unit made or destroyed (OPU 1.4.0 and later). |
@@ -287,8 +288,9 @@ globals; the core then looks up these callbacks by name, any of which may be lef
 Everything a script can call is in [API.md](API.md).
 
 **The Lua environment**: Lua 5.4 with the `base`, `string`, `table` and `math` libraries; no `io`, `os`,
-`package` or `require`, and no `math.random` (use `game.rand`, which every player in a multiplayer game draws the
-same). `print` writes to the mission's log, `logs\OP2Lua-<base>.log` in the game folder. A fresh Lua state is made
+`package` or `require`, no `dofile`, `loadfile` or `load`, and no `math.random` or `math.randomseed` (use
+`game.rand`, which every player in a multiplayer game draws the same). `print` writes to the mission's log,
+`OPU\logs\OP2Lua-<base>.log`. A fresh Lua state is made
 for each mission, so nothing carries over from the last one. The placement file and the script share that state.
 
 **Saved games**: the mission gives the game no data to save, so a saved game holds the units and the map but
