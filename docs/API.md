@@ -1,7 +1,7 @@
 # OP2Lua Mission API
 
 The surface a mission author works with in `mission.lua`. Small, shaped like the game, and
-multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.2.
+multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.3.
 
 ## Coordinates (type what you see in-game)
 
@@ -97,7 +97,7 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 |---|---|
 | `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights=, exact= }` | Create units; returns a list of `Unit` (empty for an unknown `type`, with a warning in the log). `at` is any location form. `player` accepts a `Player` or a 1-based number (default `players[1]`). `count` defaults to 1, `direction` to `"East"` (see *Names*), `lights` to on. Each unit goes on a clear tile near `at`, found by the game; `exact = true` places them on `at` itself (several in rows of 4 from `at`), as a mission's setup places its bases (structures beside tubes) - only on tiles known to be free. |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone; `sound` as for `game.message`, `false` for none) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.2"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.3"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
 | `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings (either one nil when it can't be read): `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the game's `TApp::Version`, the number its multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.3.0.4` retail 1.3.6, `1.4.0.1` OPU 1.4.x); OPU sets it, the file on disk keeps 1.2.0.7. For display only: don't branch game logic on it in multiplayer. |
 | `game.message(text [, sound])` | In-game message (comms panel). `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the game's default (Beep8), or `false` for none (e.g. before `game.play_wav`). **Keep `text` short - OP2's comms panel truncates around ~90 chars; put full detail in the log via `print()` instead.** |
 | `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`), for everyone or for one player. `toPlayer` is the game's **0-based** player number (`unit.owner`), not a `Player`. |
@@ -127,7 +127,7 @@ passed as a raw integer SoundID. An unknown name plays sound 0.
 | Call | Effect |
 |---|---|
 | `game.map_size()` | `{ w, h }` playable tile dimensions (author coords run `1..w` / `1..h`). |
-| `game.cell(x, y)` | Read a tile: `{ passable, cliff, lava, blocked, type }` (terrain + whether a wall/building occupies it). Takes two numbers, not a table; an `x`, `y` off the map is wrapped onto it. |
+| `game.cell(x, y)` | Read a tile: `{ passable, cliff, lava, blocked, type }` (terrain + whether a wall/building occupies it; `type` is the game's `CellType` number, the one `set_cell_type` takes: 0x15 dozed, 0x16 rubble, 0x17 and up walls and tubes). Takes two numbers, not a table; an `x`, `y` off the map is wrapped onto it. |
 | `game.can_place(x, y)` | Is a structure tile buildable here? (passable, not occupied, not lava). |
 | `game.find_place(near, type)` | `{ x =, y = }` of a clear spot near `near` (any location) to place `type`, or nil. |
 | `game.find_build_site(type, from [, maxR])` | `{ x =, y = }` build anchor (the building's bottom-right core tile, where `unit:build` puts it) within `maxR` tiles of `from` (default 30) where the **whole footprint** (incl. clearance) is buildable, or nil (also for a type that isn't a structure). Feed straight to `unit:build`. |
@@ -308,6 +308,41 @@ converter (`op2dll lua`) sets it in the stub for a stock map that has one, and t
 the one after the humans (`players[game.num_humans() + 1]`). Groups, like `on` functions, aren't
 kept in a saved game. `ai:` lines in the AI log name each group made.
 
+## campaign.* (data a campaign mission passes to the next)
+
+A campaign mission can save plain data when it ends, and the next mission can read it to rebuild its start: the
+base the player built, colony values, what a factory held. The data is a file beside the mission DLL,
+`<name>.carry` (JSON), and holds data only: numbers, strings, booleans and tables of them. It is never run as Lua.
+
+| Call | What it does |
+|---|---|
+| `campaign.save(name, tbl)` | Writes `tbl` to `<name>.carry` in the mission's folder, replacing the last save whole. Returns `true`, or `false` and why (also in the Mission log). Refused: a value that isn't a number, string, boolean or table (a function, a unit handle, `inf`/`nan`), a key that isn't a string or a whole number, a string key that reads as a whole number (`["5"]`: it would come back as `5`), tables nested over 64 deep or holding themselves, more than 8 MB. |
+| `campaign.load(name)` | The saved table, or `nil` and why (no file, not a campaign file, damaged). Integers come back as integers and floats as floats; whole-number keys come back as numbers. |
+| `campaign.delete(name)` | Removes `<name>.carry`; `true` when there was one. |
+
+`name` is 1 to 64 letters, digits, `_` and `-`: no paths, dots or spaces, and not a Windows device name (`CON`,
+`NUL`, `COM1` ...). Mission DLLs in the same folder share the files, so give a campaign's saves its own names
+(`"rebels_base"`). The calls touch only the file, so any callback can make them; a whole 512 x 256 map of cells plus
+1,000 units is about 1.4 MB.
+
+```lua
+function on_init()
+  local base = campaign.load("colony_base")      -- nil on a first play or a fresh start
+  if base then
+    for _, u in ipairs(base.units) do game.create_unit{ type = u.type, player = 1, at = { u.x, u.y }, weapon = u.weapon } end
+  end
+  return true
+end
+
+-- when the player wins, before mission.win():
+local list = {}
+for _, u in ipairs(players[1]:units()) do list[#list + 1] = { type = u.type, x = u.x, y = u.y, weapon = u.weapon } end
+campaign.save("colony_base", { units = list, tick = game.tick() })
+```
+
+Single player only: each machine reads its own folder, so in a multiplayer game the players' files can differ and
+a mission that built anything from one would go out of step.
+
 ## hackaray.* (opt-in: Hackaray.dll's nuke patch and end videos)
 
 Some community missions ship with `Hackaray.dll`, a game-patching library, in their zip. A mission
@@ -422,7 +457,7 @@ shown on each player's own screen.
 | `unit:produce(type [, weapon])` | Vehicle/Structure Factory: queue a unit or kit. |
 | `unit:develop(type)` | Spaceport: build a rocket or its cargo (`"EMPMissile"`, `"SolarSatellite"`, a starship module...). |
 | `unit:set_factory_cargo(bay, type [, extra])` / `unit:transfer_cargo(bay)` | Preload a kit into bay `1..6` (`extra`: a Guard Post kit's weapon, picked for the Guard Post as `unit.weapon` describes) / move a bay's kit to the docked vehicle. |
-| `unit:factory_cargo(bay)` | Read the kit type name in a 1-based factory bay (`"None"` if empty). |
+| `unit:factory_cargo(bay)` | The kit type name in a 1-based bay of a Structure Factory or Spaceport (`"None"` if empty), and its weapon or cargo (a Guard Post kit's `"Starflare"`, under the name `set_factory_cargo` takes) or `nil`. |
 | `unit:research(techId [, scientists])` | Lab: begin researching a tech, with `scientists` (default 1). |
 | `unit:train_scientists(n)` | University: train scientists. |
 | `unit:idle()` / `unit:unidle()` | Idle / un-idle a building. |
@@ -699,5 +734,6 @@ easy path is the safe path:
 - **Use the scheduler (`after`/`every`/`when`), never real time** - there is no clock access.
 - **Iterate the lists the API gives you** - already in a stable, deterministic order.
 - `io`, `os`, `package`/`require`, `dofile`, `loadfile` and `load` are not available in missions.
+- **Don't build from `campaign.load` in multiplayer** - each machine reads its own file.
 
 Stick to the calls here and your mission is multiplayer-safe by construction.

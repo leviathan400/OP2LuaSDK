@@ -4,6 +4,20 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-11-19
+
+### Added
+
+- `campaign.save` / `campaign.load` / `campaign.delete`: data a campaign mission passes to the next, in a
+  `.carry` file beside the mission DLL (data only, never run as code). Single player: in multiplayer each machine
+  reads its own file.
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.3**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.3** (build 0028; the version
+  only).
+- `unit:factory_cargo(bay)` also returns the bay's weapon or cargo.
+
 ## [0.8.2] - 2026-11-19
 
 ### Changed
