@@ -1,7 +1,7 @@
 # OP2Lua Mission API
 
 The surface a mission author works with in `mission.lua`. Small, shaped like the game, and
-multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.1.
+multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.2.
 
 ## Coordinates (type what you see in-game)
 
@@ -61,7 +61,7 @@ end
 | `on_damage_unit(target, source, damage)` | A unit took damage. Delivered by OPU mod **1.4.2+** only - on older loaders (1.4.0/1.4.1) it never fires. |
 | `on_chat(chat)` | A chat message: `chat.text` (read and write; the game's buffer limits its length) and `chat.player`, the sender's player number, **0-based** like `unit.owner`. |
 | `on_load()` / `on_unload()` | The game loads / unloads the mission. Return `false` to refuse; returning nothing is true. |
-| `on_end()` | The game ends the mission. |
+| `on_end(result)` | The game reports the mission's end: `result` is `{ result =, reason =, tick =, mark =, local_player = }` as in the result file (*Logs*). It runs only when the core learns the end while the mission still runs (a tick that sees the end, or the game's `OnEndMission` / unload); a game started by `op2launcher` closes from the end screen without either, so don't rely on it for anything that must happen. Missions that take no argument keep working. |
 | `on_save()` / `on_load_save()` | The game saves / loads a saved game. Return `false` to refuse. The script's own variables and timers aren't in the save ([FILE-FORMAT.md](FILE-FORMAT.md), Saved games). |
 
 A bug in any callback is caught, logged with a file:line, and surfaced - it never crashes the game.
@@ -97,7 +97,7 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 |---|---|
 | `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights=, exact= }` | Create units; returns a list of `Unit` (empty for an unknown `type`, with a warning in the log). `at` is any location form. `player` accepts a `Player` or a 1-based number (default `players[1]`). `count` defaults to 1, `direction` to `"East"` (see *Names*), `lights` to on. Each unit goes on a clear tile near `at`, found by the game; `exact = true` places them on `at` itself (several in rows of 4 from `at`), as a mission's setup places its bases (structures beside tubes) - only on tiles known to be free. |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone; `sound` as for `game.message`, `false` for none) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.1"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.2"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
 | `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings (either one nil when it can't be read): `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the game's `TApp::Version`, the number its multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.3.0.4` retail 1.3.6, `1.4.0.1` OPU 1.4.x); OPU sets it, the file on disk keeps 1.2.0.7. For display only: don't branch game logic on it in multiplayer. |
 | `game.message(text [, sound])` | In-game message (comms panel). `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the game's default (Beep8), or `false` for none (e.g. before `game.play_wav`). **Keep `text` short - OP2's comms panel truncates around ~90 chars; put full detail in the log via `print()` instead.** |
 | `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`), for everyone or for one player. `toPlayer` is the game's **0-based** player number (`unit.owner`), not a `Player`. |
@@ -658,6 +658,10 @@ mark (e.g. `02:45:05 m260 [INFO] ...`). Nothing is duplicated between them:
 | `log.ai(...)` | the AI log (+ comms panel if `log.show_ai_in_game(true)`) |
 | `log.show_ai_in_game(on)` | toggle echoing `log.ai` lines to the in-game comms panel (off by default) |
 | `log.ai_status(player)` | (over)writes `OP2Lua-<dll>-AI-status.json` with that player's current resources + unit counts (`player` is a `Player`, not a number). Call from `every(marks(1), ...)` for a live feed an external tool can poll. |
+
+When the mission ends, `OP2Lua-<dll>-result.json` says how: `{"result": "won", "reason": 3, "tick": ..., ...}`
+(`won`, `lost`, `aborted`, `victory`, `defeat`, `terminated` or `other`), for a launcher that wants the outcome.
+[LOGGING.md](LOGGING.md) has the format and when it is written.
 
 A crash writes a one-line summary to the Main log and the full register/stack dump to the Mission log,
 so a failure is never hidden but the noise stays in one place.

@@ -4,6 +4,18 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-11-19
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.2**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.2** (build 0027; the version
+  only).
+
+### Added
+
+- `OPU\logs\OP2Lua-<dll>-result.json` records how a mission ended (won, lost, aborted, ...), for launchers;
+  `on_end(result)` gets the same.
+
 ## [0.8.1] - 2026-11-18
 
 ### Changed

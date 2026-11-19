@@ -4,7 +4,8 @@ This is the convention **every** OP2Lua mission should follow. It keeps the righ
 right place so you can debug a mission, a scripted AI, or a crash without wading through noise.
 
 OP2Lua writes up to **three log files** per run (in `Outpost2\OPU\logs\`), plus the AI status snapshot
-`OP2Lua-<dll>-AI-status.json` when a mission asks for one (`log.ai_status`), and can also echo a scripted
+`OP2Lua-<dll>-AI-status.json` when a mission asks for one (`log.ai_status`) and the mission's end result
+`OP2Lua-<dll>-result.json` (*Mission result* below), and can also echo a scripted
 AI's events to the **in-game comms panel**. Every log line is stamped with the wall-clock time and the
 current game **mark** (100 ticks), and nothing is duplicated between files.
 
@@ -110,6 +111,36 @@ per mark:
 ```lua
 every(marks(1), function() log.ai_status(players[2]) end)   -- live feed of the AI player
 ```
+
+---
+
+## Mission result (for launchers and tools)
+
+When a mission ends, the core writes how it ended to `OP2Lua-<MissionDll>-result.json`, overwritten at each end,
+so a launcher that started the mission can read the outcome:
+
+```json
+{
+  "mission": "cMyMission.dll",
+  "result": "won",
+  "reason": 3,
+  "tick": 383,
+  "mark": 3,
+  "local_player": 0,
+  "time": "2026-11-19T01:25:15"
+}
+```
+
+`result` is the game's end reason as a word: `won` (3), `lost` (4), `aborted` (6) in a single-player game,
+`victory` (7), `defeat` (8), `terminated` (9) in a multiplayer one, `other` for anything else (0: the game was
+closed while the mission was still running). `tick` is the game's tick when it recorded the end; `local_player` is
+0-based.
+
+The file is written as soon as the core learns the mission ended: on a tick that sees the game's end reason, when
+the game sends the mission its end (`OnEndMission`) or unloads it, or at the latest when the game exits. Outpost 2
+started by `op2launcher` sends neither event and runs no more ticks once the mission ends, so there the file is
+written when the player leaves the end screen and the game closes (measured: a win, a loss and a quit from the
+menu, OPU 1.4.1). The mission log notes it: `mission ended: won (reason 3, tick 383, seen by the game's exit)`.
 
 The JSON:
 

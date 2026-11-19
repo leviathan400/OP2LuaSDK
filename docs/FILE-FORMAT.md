@@ -1,7 +1,7 @@
 # OP2Lua Mission File Format
 
 The files an OP2Lua mission is made of, what OP2LuaCore reads from each, and in what order. This is the reference
-for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.8.1.
+for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.8.2.
 
 ## The files
 
@@ -282,7 +282,7 @@ globals; the core then looks up these callbacks by name, any of which may be lef
 | `on_chat(chat)` | A chat message. |
 | `on_create_unit(unit)`, `on_destroy_unit(unit)` | A unit made or destroyed (OPU 1.4.0 and later). |
 | `on_damage_unit(target, source, damage)` | A unit damaged (OPU 1.4.2 and later). |
-| `on_load()`, `on_unload()`, `on_end()` | The game loads the mission, unloads it, or ends it. |
+| `on_load()`, `on_unload()`, `on_end(result)` | The game loads the mission, unloads it, or ends it (`result`: how; API.md). |
 | `on_save()`, `on_load_save()` | The game saves, or loads a saved game. |
 
 Everything a script can call is in [API.md](API.md).
