@@ -103,6 +103,9 @@ into the open mission.
 
 ![Screenshot](https://images.outpostuniverse.org/OP2LuaEditor.png)
 
+A rewrite of the editor in Rust, for Windows, Linux and macOS, is in the OP2Lua repository
+(`op2lua-editor-rust/`); it does everything this one does and will replace it here.
+
 ---
 
 ## Multiplayer
