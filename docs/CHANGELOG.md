@@ -4,6 +4,20 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-11-20
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.4**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.4** (build 0029), which
+  draws the two tube tiles the game lays beside each structure with tube connections (east of it and south of it) and
+  the dozed ring around every structure, power plants and mines included.
+- A fault inside a game call a script makes no longer closes the game: it comes back as a Lua error with the script's
+  file and line, is logged in the mission log, and the mission carries on. `pcall` catches it like any error.
+- Functions check their arguments before calling the game and refuse a bad one with a warning: player numbers
+  (`create_unit`, `morale_steady`, `free_morale`, the EMP missile calls), tiles off the map (`set_tile`,
+  `initial_set_tile`, `set_cell_type`), wall types (`create_wall`), and `transfer_cargo`'s bay, factory and docked
+  vehicle.
+
 ## [0.8.3] - 2026-11-19
 
 ### Added

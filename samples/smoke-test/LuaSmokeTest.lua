@@ -11,9 +11,10 @@
 --   eq(name, got, want) - PASS if got == want.
 --   ok(name, fn)        - PASS if fn() runs without raising (used for action bindings whose effect is
 --                         async/guarded; this catches signature/dispatch breakage after an API bump).
--- NOTE: pcall (ok) does NOT catch C++ access violations, so type-specific NON-guarded bindings
--- (research/set_factory_cargo/factory_cargo/train_scientists/load-unload-dump_cargo) are called only
--- on a real unit of that type. The SEH-guarded orders (build/dock/doze/repair/...) are safe anywhere.
+-- NOTE: pcall (ok) also catches a fault inside a game call (0.8.4 and later), but a game function stopped
+-- halfway can leave its state half-changed, so type-specific bindings (research/set_factory_cargo/factory_cargo/
+-- train_scientists/load-unload-dump_cargo) are called only on a real unit of that type. The orders
+-- (build/dock/doze/repair/...) are guarded on their own and safe anywhere.
 --
 -- The mission ends in mission.win() if everything passed, mission.lose() if anything failed - so the
 -- result is visible in-game even without reading the log.

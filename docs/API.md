@@ -1,7 +1,7 @@
 # OP2Lua Mission API
 
 The surface a mission author works with in `mission.lua`. Small, shaped like the game, and
-multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.3.
+multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.4.
 
 ## Coordinates (type what you see in-game)
 
@@ -65,6 +65,12 @@ end
 | `on_save()` / `on_load_save()` | The game saves / loads a saved game. Return `false` to refuse. The script's own variables and timers aren't in the save ([FILE-FORMAT.md](FILE-FORMAT.md), Saved games). |
 
 A bug in any callback is caught, logged with a file:line, and surfaced - it never crashes the game.
+So is a fault inside a game call the script makes (an access violation in the game's own code): it comes back as a
+Lua error, `game call faulted: access violation at 0x... reading 0x...`, after the script's file and line; the
+callback stops there, `pcall` catches it like any error, and the game carries on. The functions check their
+arguments before calling the game (a player 1-7, a tile on the map, a bay 1-6 on a factory, a known type) and refuse a
+bad one with a warning in the mission log, because a game function stopped halfway can leave its state
+half-changed.
 `print(...)` from a mission is your debug channel: it goes to **that mission's own log**,
 `logs/OP2Lua-<MissionDll>.log` (not the shared master log). See *Logs* below.
 
@@ -97,7 +103,7 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 |---|---|
 | `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights=, exact= }` | Create units; returns a list of `Unit` (empty for an unknown `type`, with a warning in the log). `at` is any location form. `player` accepts a `Player` or a 1-based number (default `players[1]`). `count` defaults to 1, `direction` to `"East"` (see *Names*), `lights` to on. Each unit goes on a clear tile near `at`, found by the game; `exact = true` places them on `at` itself (several in rows of 4 from `at`), as a mission's setup places its bases (structures beside tubes) - only on tiles known to be free. |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone; `sound` as for `game.message`, `false` for none) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.3"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.4"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
 | `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings (either one nil when it can't be read): `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the game's `TApp::Version`, the number its multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.3.0.4` retail 1.3.6, `1.4.0.1` OPU 1.4.x); OPU sets it, the file on disk keeps 1.2.0.7. For display only: don't branch game logic on it in multiplayer. |
 | `game.message(text [, sound])` | In-game message (comms panel). `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the game's default (Beep8), or `false` for none (e.g. before `game.play_wav`). **Keep `text` short - OP2's comms panel truncates around ~90 chars; put full detail in the log via `print()` instead.** |
 | `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`), for everyone or for one player. `toPlayer` is the game's **0-based** player number (`unit.owner`), not a `Player`. |
@@ -468,13 +474,14 @@ shown on each player's own screen.
 > tick or the last (by `create_unit` or any other way) can't take a `move`, `attack_move` or `attack` yet, so
 > that order is held until it can (about 25 ticks); a newer such order replaces one still held. A `move` to a
 > tile off the game's grid is ignored and the unit keeps its order, as the game's `Unit::DoMove` does. The
-> commands that touch OP2's pathfinder are crash-guarded: a bad unit state logs a warning and is skipped
-> rather than taking the game down.
+> commands that touch OP2's pathfinder are guarded on their own: a bad unit state makes the command return
+> without effect rather than raising an error.
 >
 > Loading a ConVec from the Structure Factory: `dock(sf)` it, wait until `sf:unit_on_dock()` is that
 > ConVec, then `set_kit(kind)` to load the kit (and `set_factory_cargo(bay, "None")` to take it from
-> storage). `transfer_cargo` is unreliable from a script - it can crash even when correctly docked - so
-> prefer `set_kit` for a docked ConVec.
+> storage). `transfer_cargo` is unreliable from a script - the game can fault in it even when a vehicle is
+> correctly docked (it then logs a warning and moves nothing) - so prefer `set_kit` for a docked ConVec. It refuses
+> a bay outside 1-6, an empty bay, a unit that isn't a factory, and a dock with no vehicle on it.
 
 **Cargo types:** `Food`, `CommonOre`, `RareOre`, `CommonMetal`, `RareMetal`, `CommonRubble`,
 `RareRubble`, `Spacecraft`, `Wreckage`, `GeneBank`, `Empty` (aliases: `Ore`, `Metal`, `Rubble`).
@@ -698,8 +705,9 @@ When the mission ends, `OP2Lua-<dll>-result.json` says how: `{"result": "won", "
 (`won`, `lost`, `aborted`, `victory`, `defeat`, `terminated` or `other`), for a launcher that wants the outcome.
 [LOGGING.md](LOGGING.md) has the format and when it is written.
 
-A crash writes a one-line summary to the Main log and the full register/stack dump to the Mission log,
-so a failure is never hidden but the noise stays in one place.
+A crash (a fault the core can't turn into a Lua error: one in the game's own tick, outside any call a script
+makes) writes a one-line summary to the Main log and the full register/stack dump to the Mission log, so a failure
+is never hidden but the noise stays in one place.
 
 See **[`LOGGING.md`](LOGGING.md)** for the full logging/debug standard every mission should follow.
 

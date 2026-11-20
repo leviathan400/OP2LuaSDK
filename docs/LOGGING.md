@@ -175,6 +175,10 @@ So when something dies, glance at `OP2Lua.log` to see *that* it crashed, then op
 log for the registers/stack. Script errors (a Lua error in `on_init`, a callback, etc.) also go to the
 Mission log.
 
+A fault inside a game call a script makes isn't a crash: it is a script error,
+`GuardTest.lua:29: game call faulted: access violation at 0x0047613C reading 0x83C07FD8`, in the Mission log, with
+no dump, and the game carries on.
+
 ---
 
 ## Quick reference
