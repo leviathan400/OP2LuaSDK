@@ -4,6 +4,20 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-11-21
+
+### Fixed
+
+- `game.morale_steady()` and `game.free_morale()` with no player (every player) did nothing in 0.8.4: the player
+  check took "every player" for a refused player. Missions that lock every player's morale (the tutorials, several
+  campaign missions on Easy, colony games such as Hold the Line) left it free.
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.5**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.5** (build 0030).
+- API.md: `game.uses_morale()` reads the lobby's Morale Steady option; a mission's `game.morale_steady` doesn't
+  change it.
+
 ## [0.8.4] - 2026-11-20
 
 ### Changed
