@@ -1,7 +1,7 @@
 # OP2Lua Mission API
 
 The surface a mission author works with in `mission.lua`. Small, shaped like the game, and
-multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.5.
+multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.6.
 
 ## Coordinates (type what you see in-game)
 
@@ -103,7 +103,7 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 |---|---|
 | `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights=, exact= }` | Create units; returns a list of `Unit` (empty for an unknown `type`, with a warning in the log). `at` is any location form. `player` accepts a `Player` or a 1-based number (default `players[1]`). `count` defaults to 1, `direction` to `"East"` (see *Names*), `lights` to on. Each unit goes on a clear tile near `at`, found by the game; `exact = true` places them on `at` itself (several in rows of 4 from `at`), as a mission's setup places its bases (structures beside tubes) - only on tiles known to be free. |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone; `sound` as for `game.message`, `false` for none) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.5"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.6"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
 | `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings (either one nil when it can't be read): `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the game's `TApp::Version`, the number its multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.3.0.4` retail 1.3.6, `1.4.0.1` OPU 1.4.x); OPU sets it, the file on disk keeps 1.2.0.7. For display only: don't branch game logic on it in multiplayer. |
 | `game.message(text [, sound])` | In-game message (comms panel). `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the game's default (Beep8), or `false` for none (e.g. before `game.play_wav`). **Keep `text` short - OP2's comms panel truncates around ~90 chars; put full detail in the log via `print()` instead.** |
 | `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`), for everyone or for one player. `toPlayer` is the game's **0-based** player number (`unit.owner`), not a `Player`. |
@@ -470,9 +470,9 @@ shown on each player's own screen.
 
 > `area` (for `build_wall`/`remove_wall`/`doze`/`salvage`) takes the area forms under *Coordinates*.
 >
-> Orders go out at once, as a mission DLL's `DoMove` / `DoAttack` do. The one exception: a unit made this
-> tick or the last (by `create_unit` or any other way) can't take a `move`, `attack_move` or `attack` yet, so
-> that order is held until it can (about 25 ticks); a newer such order replaces one still held. A `move` to a
+> Orders go out at once, as a mission DLL's `DoMove` / `DoAttack` do, to a unit made this same tick too. One
+> the unit can't take (the guarded call fails) is held and retried each tick; a newer order replaces one still
+> held. A `move` to a
 > tile off the game's grid is ignored and the unit keeps its order, as the game's `Unit::DoMove` does. The
 > commands that touch OP2's pathfinder are guarded on their own: a bad unit state makes the command return
 > without effect rather than raising an error.
@@ -668,8 +668,8 @@ A few things are about Outpost 2 itself, not OP2Lua - worth knowing:
 - **Enemy structures only auto-fire at *hostile* players.** That requires the mission's player
   count to be correct (the converter sets it); units owned by an un-initialized player won't be
   treated as enemies even though they exist.
-- **Command units after creation, not the same tick.** Handled automatically - a new unit's `move`/
-  `attack_move`/`attack` is held until it can take it - so you can write the obvious thing.
+- **Command a unit the tick you make it.** `create_unit` then `move`/`attack_move`/`attack` goes out at once,
+  as a mission DLL's `CreateUnit` then `DoMove` does (through 0.8.5 such an order was held about 25 ticks).
 - **One command per unit per tick.** A unit keeps only the *last* command issued in a given tick. So
   `u:move(a); u:move(b)` in one tick only does `b`. (Producing one unit at *each of several* factories
   in the same tick is fine - different units.)

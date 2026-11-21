@@ -59,7 +59,7 @@ Rule of thumb: **if it describes what the enemy/computer player is doing, it's `
 else a mission prints is `print`. This is what makes the AI log a clean, AI-only stream.
 
 The framework follows the same rule for its own unit instrumentation: `create_unit` for a **computer**
-player and the deferred move/attack order flush (`issued N queued unit order(s)`) are written to the
+player and the retried move/attack orders (`issued N queued unit order(s)`) are written to the
 **AI** log automatically; `create_unit` for the **human** player goes to the Mission log. So spawning
 and commanding a scripted AI's forces all shows up in one place without you doing anything.
 

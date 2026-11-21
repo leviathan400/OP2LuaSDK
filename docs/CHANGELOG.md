@@ -4,6 +4,16 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-11-21
+
+### Changed
+
+- A `move`, `attack_move` or `attack` to a unit made this tick goes out at once, as a mission DLL's `CreateUnit`
+  then `DoMove` does. Through 0.8.5 such an order was held about 25 ticks, so reinforcements set off late; a
+  mission that makes a unit and orders it in the same tick now sees it leave right away.
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.6**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.6** (build 0031).
+- API.md: orders to a new unit go out at once.
+
 ## [0.8.5] - 2026-11-21
 
 ### Fixed
