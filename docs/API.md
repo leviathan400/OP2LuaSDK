@@ -1,7 +1,7 @@
 # OP2Lua Mission API
 
 The surface a mission author works with in `mission.lua`. Small, shaped like the game, and
-multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.6.
+multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.7.
 
 ## Coordinates (type what you see in-game)
 
@@ -71,6 +71,19 @@ callback stops there, `pcall` catches it like any error, and the game carries on
 arguments before calling the game (a player 1-7, a tile on the map, a bay 1-6 on a factory, a known type) and refuse a
 bad one with a warning in the mission log, because a game function stopped halfway can leave its state
 half-changed.
+
+A call that never returns (an endless loop) is stopped too. Each call the game makes into the script may run 25
+million Lua instructions, far more than any real mission needs (about a quarter of a second on a fast machine):
+`on_init`, `on_tick` and the other callbacks, a trigger's `on` function, the script's first run and its placement each
+get that budget, and so does each `after`, `every` and `when` function the scheduler runs. Past it the call fails with
+`Name.lua:12: the mission's script ran more than 25 million instructions in one call (an endless loop?); the call
+was dropped`, naming the line it was running. `pcall` can't catch it and carry on (the error comes back at the next
+instruction until the call returns). The call is dropped and logged as an error in the Mission log (a scheduled one
+with where it was defined, e.g. `every() function defined at MyMission.lua:40 dropped: ...`) and in the Main log;
+a dropped `every` or `when` is cancelled, so it can't stall every tick. The game, the other timers and the next
+`on_tick` carry on. Instructions are counted, not time, so every machine in a multiplayer game stops at the same
+point; time spent inside a game call isn't counted.
+
 `print(...)` from a mission is your debug channel: it goes to **that mission's own log**,
 `logs/OP2Lua-<MissionDll>.log` (not the shared master log). See *Logs* below.
 
@@ -103,7 +116,7 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 |---|---|
 | `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights=, exact= }` | Create units; returns a list of `Unit` (empty for an unknown `type`, with a warning in the log). `at` is any location form. `player` accepts a `Player` or a 1-based number (default `players[1]`). `count` defaults to 1, `direction` to `"East"` (see *Names*), `lights` to on. Each unit goes on a clear tile near `at`, found by the game; `exact = true` places them on `at` itself (several in rows of 4 from `at`), as a mission's setup places its bases (structures beside tubes) - only on tiles known to be free. |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone; `sound` as for `game.message`, `false` for none) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.6"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.7"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
 | `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings (either one nil when it can't be read): `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the game's `TApp::Version`, the number its multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.3.0.4` retail 1.3.6, `1.4.0.1` OPU 1.4.x); OPU sets it, the file on disk keeps 1.2.0.7. For display only: don't branch game logic on it in multiplayer. |
 | `game.message(text [, sound])` | In-game message (comms panel). `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the game's default (Beep8), or `false` for none (e.g. before `game.play_wav`). **Keep `text` short - OP2's comms panel truncates around ~90 chars; put full detail in the log via `print()` instead.** |
 | `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`), for everyone or for one player. `toPlayer` is the game's **0-based** player number (`unit.owner`), not a `Player`. |
@@ -395,6 +408,7 @@ shown on each player's own screen.
 | `unit.weapon` | Weapon turret type name (`"Laser"`, ...; `"None"` without one). A Guard Post's `"Starflare"` / `"Supernova"` is its own turret version (`StarflareGP` / `SupernovaGP`, as the stock missions make it); every call that takes a weapon picks the version for the unit it goes on. |
 | `unit.cargo` / `unit.cargo_amount` | A Cargo Truck's load (type name + quantity). |
 | `unit.kit` | The structure kit a ConVec is carrying (type name; `"None"` without one). |
+| `unit.kit_weapon` | That kit's weapon: a Guard Post kit's turret (`"Microwave"`, `"Starflare"`, ..., under the name `set_kit` takes as its topping), or `nil`. On a ConVec, `unit.weapon` reads the kit itself, not its turret. |
 | `unit.command` | Current command (raw int). |
 | `unit.is_building` / `unit.is_vehicle` / `unit.is_factory` / `unit.is_offensive` | Classification. |
 | `unit.lights` | A vehicle's headlights are on (the game's own flag, set by the player or `set_lights`). |
@@ -690,8 +704,8 @@ mark (e.g. `02:45:05 m260 [INFO] ...`). Nothing is duplicated between them:
 - **`OP2Lua-<MissionDll>-AI.log`** - a scripted AI's debug stream, written by **`log.ai(...)`**. Lets
   you monitor/debug just the AI in isolation. Created lazily, so a mission that never calls `log.ai`
   makes no AI file.
-- **`OP2Lua.log`** - the shared Main log: framework lifecycle (mission load/end, version, map) and a
-  one-line crash summary, across every mission. Mission/AI output is **not** here, so it stays a clean
+- **`OP2Lua.log`** - the shared Main log: framework lifecycle (mission load/end, version, map), a
+  one-line crash summary, and a warning for each call the instruction limit dropped, across every mission. Mission/AI output is **not** here, so it stays a clean
   framework record.
 
 | Logging call | Goes to |

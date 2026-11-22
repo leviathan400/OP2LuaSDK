@@ -4,6 +4,22 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-11-22
+
+### Added
+
+- `unit.kit_weapon`: a ConVec kit's weapon (a Guard Post kit's turret, the name `set_kit` takes as its topping), or
+  `nil`. On a ConVec `unit.weapon` reads the kit itself, so the turret couldn't be read before.
+- A limit for runaway Lua: a call into the script (a callback, a trigger's function, each `after`/`every`/`when`
+  function) that runs more than 25 million Lua instructions, an endless loop, is stopped with an error naming the
+  line, logged in the Mission log and the Main log, and dropped; the game carries on. A dropped `every` or `when` is
+  cancelled. API.md, *Callbacks*.
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.7**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.7** (build 0032).
+- API.md, LOGGING.md, FILE-FORMAT.md copied from OP2Lua.
+
 ## [0.8.6] - 2026-11-21
 
 ### Changed

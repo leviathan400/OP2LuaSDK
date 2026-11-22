@@ -21,7 +21,7 @@ current game **mark** (100 ticks), and nothing is duplicated between files.
 
 | File | Channel | Put here |
 |---|---|---|
-| `OP2Lua.log` | **Main** | The framework's own record across all missions — mission load/end, core version, map, and a **one-line crash summary**. You don't write to this from Lua. |
+| `OP2Lua.log` | **Main** | The framework's own record across all missions — mission load/end, core version, map, a **one-line crash summary**, and a warning for each call the instruction limit drops. You don't write to this from Lua. |
 | `OP2Lua-<MissionDll>.log` | **Mission** | *This mission's* events — `game.message` calls, mission/script errors, your `print()` debug, and the **full crash dump**. |
 | `OP2Lua-<MissionDll>-AI.log` | **AI** | A scripted AI's debug stream, written with **`log.ai(...)`**. Lets you monitor/debug just the AI in isolation. Created lazily — a mission that never calls `log.ai` makes no AI file. |
 
@@ -178,6 +178,17 @@ Mission log.
 A fault inside a game call a script makes isn't a crash: it is a script error,
 `GuardTest.lua:29: game call faulted: access violation at 0x0047613C reading 0x83C07FD8`, in the Mission log, with
 no dump, and the game carries on.
+
+Nor is a call that never returns: past 25 million Lua instructions in one call (API.md, *Callbacks*) the call is
+dropped and the game carries on. The Mission log names it as an error, a scheduled function with where it was
+defined:
+
+```
+16:46:29 m1     [ERROR] every() function defined at RunawayTest.lua:20 dropped: RunawayTest.lua:7: the mission's script ran more than 25 million instructions in one call (an endless loop?); the call was dropped
+```
+
+and the Main log has a warning with the line it was running:
+`[WARN] a mission call ran more than 25 million Lua instructions (at RunawayTest.lua:7); dropping it`.
 
 ---
 
