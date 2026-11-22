@@ -15,7 +15,7 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 
 - `on_load()` is called right after the script's top level, before `on_init()`; `on_save()` just before the game
   writes a save.
-- `bin/OP2LuaCore.dll` is OP2Lua **0.8.8**; `tools/OP2LuaEditor.exe` is still 0.8.7 (the editor didn't change).
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.8**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.8** (build 0033).
 - API.md and FILE-FORMAT.md copied from OP2Lua.
 
 ## [0.8.7] - 2026-11-22
