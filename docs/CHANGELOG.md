@@ -2,6 +2,22 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [0.8.8] - 2026-11-22
+
+### Added
+
+- Saved games keep the mission's script: its variables and tables, its pending `after`/`every`/`when` timers, its
+  triggers' `on` functions and the game handles it holds. A loaded game carries on where it was saved, without
+  running the script's start-up code again, and calls `on_load_save()` on its first tick. FILE-FORMAT.md, "Saved
+  games", lists what a script must and mustn't do.
+
+### Changed
+
+- `on_load()` is called right after the script's top level, before `on_init()`; `on_save()` just before the game
+  writes a save.
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.8**; `tools/OP2LuaEditor.exe` is still 0.8.7 (the editor didn't change).
+- API.md and FILE-FORMAT.md copied from OP2Lua.
+
 ## [0.8.7] - 2026-11-22
 
 ### Added

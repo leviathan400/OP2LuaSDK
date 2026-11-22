@@ -1,7 +1,7 @@
 # OP2Lua Mission API
 
 The surface a mission author works with in `mission.lua`. Small, shaped like the game, and
-multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.7.
+multiplayer-safe by construction (see the note at the bottom). Implemented as of v0.8.8.
 
 ## Coordinates (type what you see in-game)
 
@@ -60,9 +60,10 @@ end
 | `on_create_unit(unit)` / `on_destroy_unit(unit)` | Unit created / destroyed. Delivered by OPU mod **1.4.0+**. |
 | `on_damage_unit(target, source, damage)` | A unit took damage. Delivered by OPU mod **1.4.2+** only - on older loaders (1.4.0/1.4.1) it never fires. |
 | `on_chat(chat)` | A chat message: `chat.text` (read and write; the game's buffer limits its length) and `chat.player`, the sender's player number, **0-based** like `unit.owner`. |
-| `on_load()` / `on_unload()` | The game loads / unloads the mission. Return `false` to refuse; returning nothing is true. |
+| `on_load()` | Once, right after the script's top level has run at the start of a new game, before the placement is applied and `on_init`. Not called when a saved game loads. |
+| `on_unload()` | The game unloads the mission. Delivered by OPU mod **1.4.2+** only. |
 | `on_end(result)` | The game reports the mission's end: `result` is `{ result =, reason =, tick =, mark =, local_player = }` as in the result file (*Logs*). It runs only when the core learns the end while the mission still runs (a tick that sees the end, or the game's `OnEndMission` / unload); a game started by `op2launcher` closes from the end screen without either, so don't rely on it for anything that must happen. Missions that take no argument keep working. |
-| `on_save()` / `on_load_save()` | The game saves / loads a saved game. Return `false` to refuse. The script's own variables and timers aren't in the save ([FILE-FORMAT.md](FILE-FORMAT.md), Saved games). |
+| `on_save()` / `on_load_save()` | `on_save`: the game is about to save (change only the script's own variables here, not the game). `on_load_save`: the first tick after a saved game loaded. A saved game keeps the script's variables, timers and triggers' functions without either; they are for settings outside the script ([FILE-FORMAT.md](FILE-FORMAT.md), Saved games). |
 
 A bug in any callback is caught, logged with a file:line, and surfaced - it never crashes the game.
 So is a fault inside a game call the script makes (an access violation in the game's own code): it comes back as a
@@ -116,7 +117,7 @@ Prefer `at_mark` / `marks(n)` over the legacy `game.seconds` / `game.minutes`.
 |---|---|
 | `game.create_unit{ type=, player=, at=, count=, weapon=, direction=, lights=, exact= }` | Create units; returns a list of `Unit` (empty for an unknown `type`, with a warning in the log). `at` is any location form. `player` accepts a `Player` or a 1-based number (default `players[1]`). `count` defaults to 1, `direction` to `"East"` (see *Names*), `lights` to on. Each unit goes on a clear tile near `at`, found by the game; `exact = true` places them on `at` itself (several in rows of 4 from `at`), as a mission's setup places its bases (structures beside tubes) - only on tiles known to be free. |
 | `game.message_at(text, sound, player, px, py)` | A message for one player (`nil`: everyone; `sound` as for `game.message`, `false` for none) that points at a spot of the map in pixels, as the stock missions post theirs (CPS2's "Microbe growth detected!"). |
-| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.7"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
+| `game.version()` | The running OP2LuaCore: its version and when its DLL was built, two strings: `local v, built = game.version()` gives `"0.8.8"`, `"2026-11-17 12:15:06"`. The build time is the DLL's link time (a copy keeps it), the same one the log's first line and OP2LuaEditor's status bar show. |
 | `game.op2_version()` | The running Outpost 2: the version the game goes by and Outpost2.exe's own file version, two strings (either one nil when it can't be read): `local v, exe = game.op2_version()` gives `"1.4.0.1"`, `"1.2.0.7"` under OPU 1.4.x. The first is the game's `TApp::Version`, the number its multiplayer lobby compares (`1.2.0.7` for the GOG exe alone, `1.3.0.4` retail 1.3.6, `1.4.0.1` OPU 1.4.x); OPU sets it, the file on disk keeps 1.2.0.7. For display only: don't branch game logic on it in multiplayer. |
 | `game.message(text [, sound])` | In-game message (comms panel). `sound` is a name (`"EnemyUnitSighted"`) or raw id; omit for the game's default (Beep8), or `false` for none (e.g. before `game.play_wav`). **Keep `text` short - OP2's comms panel truncates around ~90 chars; put full detail in the log via `print()` instead.** |
 | `game.sound(name_or_id [, toPlayer])` | Play a game sound (e.g. `game.sound("WeAreUnderAttack")`), for everyone or for one player. `toPlayer` is the game's **0-based** player number (`unit.owner`), not a `Player`. |
@@ -263,8 +264,8 @@ mission.victory(trigger.set{common, rare},
                 "Be the first to have 20,000 Common Metal and 5,000 Rare Metal in storage.", {one_shot = true})
 ```
 
-An `on` function lives in the Lua state only: a saved game would lose it (multiplayer games aren't
-saved). Needs OPU 1.4.0 or later (it passes the trigger that fired).
+A saved game keeps a trigger's `on` function with the rest of the script ([FILE-FORMAT.md](FILE-FORMAT.md), Saved
+games). Needs OPU 1.4.0 or later (it passes the trigger that fired).
 
 ## ai.* (the game's AI groups)
 
@@ -324,8 +325,9 @@ base:record_veh_reinforce_group(guard, 1)
 
 A multiplayer game has a computer player only when the mission's `DescBlockEx` asks for one: the
 converter (`op2dll lua`) sets it in the stub for a stock map that has one, and the computer player is
-the one after the humans (`players[game.num_humans() + 1]`). Groups, like `on` functions, aren't
-kept in a saved game. `ai:` lines in the AI log name each group made.
+the one after the humans (`players[game.num_humans() + 1]`). The groups are the game's own, so a saved game keeps
+them, and the `Group` handles a script holds work again after the load. `ai:` lines in the AI log name each group
+made.
 
 ## campaign.* (data a campaign mission passes to the next)
 

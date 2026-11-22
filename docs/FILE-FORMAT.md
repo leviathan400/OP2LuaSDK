@@ -1,7 +1,7 @@
 # OP2Lua Mission File Format
 
 The files an OP2Lua mission is made of, what OP2LuaCore reads from each, and in what order. This is the reference
-for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.8.7.
+for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.8.8.
 
 ## The files
 
@@ -272,8 +272,9 @@ These globals don't exist while the script file itself is being run (at load); u
 
 ## `<Mission>.lua`
 
-An ordinary Lua chunk run once when the mission loads, after the placement file has been read. It defines
-globals; the core then looks up these callbacks by name, any of which may be left out:
+An ordinary Lua chunk run once when a new game of the mission starts, after the placement file has been read (not
+when a saved game loads: see *Saved games*). It defines globals; the core then looks up these callbacks by name, any
+of which may be left out:
 
 | Callback | When |
 |---|---|
@@ -282,8 +283,9 @@ globals; the core then looks up these callbacks by name, any of which may be lef
 | `on_chat(chat)` | A chat message. |
 | `on_create_unit(unit)`, `on_destroy_unit(unit)` | A unit made or destroyed (OPU 1.4.0 and later). |
 | `on_damage_unit(target, source, damage)` | A unit damaged (OPU 1.4.2 and later). |
-| `on_load()`, `on_unload()`, `on_end(result)` | The game loads the mission, unloads it, or ends it (`result`: how; API.md). |
-| `on_save()`, `on_load_save()` | The game saves, or loads a saved game. |
+| `on_load()` | Once, right after the script's top level has run, before the placement is applied and `on_init`. |
+| `on_unload()`, `on_end(result)` | The game unloads the mission (OPU 1.4.2 and later), or ends it (`result`: how; API.md). |
+| `on_save()`, `on_load_save()` | The game is about to save; the first tick after a saved game loaded (*Saved games*). |
 
 Everything a script can call is in [API.md](API.md).
 
@@ -293,5 +295,57 @@ Everything a script can call is in [API.md](API.md).
 `OPU\logs\OP2Lua-<base>.log`. A fresh Lua state is made
 for each mission, so nothing carries over from the last one. The placement file and the script share that state.
 
-**Saved games**: the mission gives the game no data to save, so a saved game holds the units and the map but
-not the script's variables or pending timers.
+## Saved games
+
+A saved game carries the mission's script on where it was (OP2Lua 0.8.8 and later). The game saves the units, the
+map, the triggers and the AI groups; OP2Lua adds the script's state to the same file, and puts it back when the save
+is loaded. The script's top level, `on_load`, the placement and `on_init` don't run again: the script goes on from
+the tick it was saved at, its timers due when they were due, and calls `on_load_save()` on the first tick after the
+load.
+
+**What is kept**: everything the script can reach from its globals and its triggers' `on` functions:
+
+- tables (with their metatables), strings, numbers and booleans, a table that refers to itself included;
+- the script's functions with their upvalues: a file-level `local` that several functions use stays one variable;
+- the scheduler's pending `after`, `every` and `when` functions, and the triggers' `on` functions;
+- the game's handles - `Unit`, `Trigger`, `Group`, `Player`, `Region`, `UnitBlock` - as the ids the game's own save
+  keeps, so `units.base_cc` is still the Command Center after the load;
+- what the script changed in the core's own tables (`game`, `players`, `units`, `regions`, `markers`, ...), and the
+  library functions it keeps (`local fmt = string.format`);
+- the core's own state: unit orders still waiting to go out, the objective texts, `log.show_ai_in_game`, and the
+  `hackaray` patches (set again after the load).
+
+**What a script must do**: keep its state in Lua variables, as any script does; nothing has to be written in
+`on_save` or read back in `on_load_save`. Those two are for what lives outside the script:
+
+- Game settings that a saved game doesn't hold: the music playlist (`game.set_music`) and changed research costs or
+  tech gates may come back as the game's defaults, so set them again in `on_load_save()`. (The game reads the tech
+  file again when it loads a save. Not measured for every setting.)
+- Files: `campaign.save` writes to disk at once, and a load doesn't take it back. A WAV `game.play_wav` was playing
+  doesn't play on.
+- `on_save()` runs while the game writes the file: it may change the script's own variables but mustn't change the
+  game.
+
+**What a script mustn't keep** in a variable when the game is saved: an iterator in the middle of a walk
+(`string.gmatch`'s), or a C function from somewhere other than the libraries and the core. The game is then saved
+without the script's state: the Mission log names the value (`G.words.iterator` is the global `words`' field
+`iterator`), the player gets a message, and loading that save stops the script. A `pairs` or `ipairs` walk inside a
+function is fine: nothing of it is left once the function returns.
+
+**A save resumes with the same script**: the save names each of the script's functions by its place in the
+`.lua` file (it holds no code), so loading it needs that mission's `.lua` exactly as it was. After the script changes
+(an update of the mission), its older saves load with the script stopped, and the Mission log and the player are
+told why. A change to the placement file doesn't matter. A later OP2Lua loads the save while its own runtime (the
+scheduler) is unchanged; otherwise the same.
+
+**Older saves**: a game saved before OP2Lua 0.8.8 holds no script state. It loads (units, map, triggers as the game
+saved them) with the mission's script stopped, and says so; to play the mission with its script, start it again.
+
+**Tables in a loaded game** are new tables with the same contents. A loop over a table with `pairs` may visit its
+keys in another order after a load than in the game that saved; a script that needs an order uses an array
+(`ipairs`, `#`) or sorts.
+
+How it is stored: the bytes are the mission DLL's save region (`GetSaveRegions`), in the save's mission block with
+their size first. Saving and loading go through three hooks the core puts into Outpost2.exe 1.2.0.7's save and load
+code (src/SaveGame.h); with another Outpost2.exe the hooks aren't made, the Main log says so, and saved games behave
+as before 0.8.8. The state of a large campaign mission takes 10-150 KB.
