@@ -2,8 +2,6 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
-## [Unreleased]
-
 ## [0.8.7] - 2026-11-22
 
 ### Added
