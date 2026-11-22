@@ -192,6 +192,35 @@ and the Main log has a warning with the line it was running:
 
 ---
 
+## Saved games
+
+A saved game keeps the mission's script (0.8.8; FILE-FORMAT.md, *Saved games*). Each save and load leaves a
+`saved game:` line in the Mission log, so `grep "saved game"` shows what happened to the script:
+
+```
+10:09:55 m50    [INFO] saved game: the script's state saved (33177 bytes, tick 5000)
+10:17:53 m80    [INFO] saved game: loading at tick 8000 (mark 80), saved by OP2Lua 0.8.8
+10:17:53 m80    [INFO] saved game: the script carries on (81256 bytes)
+```
+
+After `the script carries on`, the script's own lines go on from the saved tick, and `on_load_save` runs on the first
+tick. A load starts a new section of the Mission log, with the usual header line.
+
+When the script can't carry on, the line says why (for the first three the player also gets a message in the game):
+
+| Mission log | What happened |
+|---|---|
+| `[ERROR] saved game: the script's state can't be saved: <why> (at G.words.iterator). The game is saved without it; loading it stops the mission's script.` | At the save: the script held a value a save can't keep. `at` names it from the globals (`G`): here the global `words`, its field `iterator`. The game is still saved. |
+| `[ERROR] saved game: the script's state couldn't be put back: <why>. The mission's script doesn't run in this game.` | At the load. `<why>` is e.g. *the save was made with another version of the mission script* (the `.lua` changed since the save), or the reason the save gave when it couldn't keep the state. |
+| `[WARN] saved game: saved before OP2Lua kept a mission's script state in the save (0.8.8); the mission's script doesn't run in this game` | A save made with OP2Lua 0.8.7 or older. |
+| `[WARN] saved game: no script was running when it was saved` | The script had failed to load in the game that saved. |
+
+The Main log notes once per game session whether saved games keep the script:
+`saved games: hooks installed (a Lua mission's script state goes in the save)`, or a warning that this Outpost2.exe
+isn't the 1.2.0.7 the core knows, in which case a saved game doesn't keep the script's state.
+
+---
+
 ## Quick reference
 
 ```lua
@@ -214,6 +243,7 @@ log.show_ai_in_game(true)
 | What the framework did / that it crashed | `OP2Lua.log` |
 | What your mission did + the full crash dump | `OP2Lua-<dll>.log` |
 | Only the scripted AI | `OP2Lua-<dll>-AI.log` |
+| What a save or load did to the script | `OP2Lua-<dll>.log`, the `saved game:` lines |
 
 Requires OP2LuaCore **0.6.7+** (the `log` table + AI log landed in 0.6.6; `log.ai_status` in 0.6.7). See
 [`API.md`](API.md) for the rest of the scripting API.
