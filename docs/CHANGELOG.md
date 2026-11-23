@@ -12,8 +12,7 @@ All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua change
 - API.md has a *Saved games* section; FILE-FORMAT.md says which game settings a saved game keeps, how to release a
   mission update without stopping players' saves, which OP2Lua updates keep saves loading, and the saved state's
   header for tools. GETTING-STARTED.md mentions saved games in its gotchas.
-- `bin/OP2LuaCore.dll` is OP2Lua **0.8.9** (not yet on the OP2Lua releases page); `tools/OP2LuaEditor.exe` is still
-  0.8.8 (the editor didn't change).
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.9**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.9** (build 0034).
 - API.md, FILE-FORMAT.md and LOGGING.md copied from OP2Lua.
 
 ## [0.8.8] - 2026-11-22
