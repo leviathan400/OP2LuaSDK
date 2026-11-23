@@ -2,6 +2,20 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [0.8.9] - 2026-11-23
+
+### Changed
+
+- The in-game messages about saved games are short enough for the message pane (it cut them off after about 90
+  characters), e.g. "OP2Lua: saved with another version of this mission: its script is stopped." The Mission log
+  keeps the whole reason. Saves made with 0.8.8 load and carry on.
+- API.md has a *Saved games* section; FILE-FORMAT.md says which game settings a saved game keeps, how to release a
+  mission update without stopping players' saves, which OP2Lua updates keep saves loading, and the saved state's
+  header for tools. GETTING-STARTED.md mentions saved games in its gotchas.
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.9** (not yet on the OP2Lua releases page); `tools/OP2LuaEditor.exe` is still
+  0.8.8 (the editor didn't change).
+- API.md, FILE-FORMAT.md and LOGGING.md copied from OP2Lua.
+
 ## [0.8.8] - 2026-11-22
 
 ### Added

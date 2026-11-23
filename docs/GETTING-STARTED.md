@@ -171,5 +171,8 @@ fastest way to learn.
 - **Use the status-bar coordinates** for placement (type what you see).
 - **Use the scheduler, not real time;** use `game.rand`, not `math.random` - this keeps your
   mission multiplayer-safe.
+- **Saved games keep your script** (OP2Lua 0.8.8+): keep state in variables and it all comes back on a load. But a
+  save only resumes with the same `.lua` file, so changing a released mission's script stops its players' saves.
+  Research costs and the music playlist are set again in `on_load_save()`. API.md and FILE-FORMAT.md, *Saved games*.
 
 Have fun. The whole point is that a mission is just a couple of readable Lua files.

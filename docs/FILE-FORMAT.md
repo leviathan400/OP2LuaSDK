@@ -1,7 +1,7 @@
 # OP2Lua Mission File Format
 
 The files an OP2Lua mission is made of, what OP2LuaCore reads from each, and in what order. This is the reference
-for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.8.8.
+for `<Mission>.placement.lua`; the functions a mission script calls are in [API.md](API.md). As of v0.8.9.
 
 ## The files
 
@@ -318,9 +318,15 @@ load.
 **What a script must do**: keep its state in Lua variables, as any script does; nothing has to be written in
 `on_save` or read back in `on_load_save`. Those two are for what lives outside the script:
 
-- Game settings that a saved game doesn't hold: the music playlist (`game.set_music`) and changed research costs or
-  tech gates may come back as the game's defaults, so set them again in `on_load_save()`. (The game reads the tech
-  file again when it loads a save. Not measured for every setting.)
+- Game settings a saved game doesn't hold. The game saves most of what a script changes in it, but not all:
+
+  | Kept by the game's save | Not kept: set it again in `on_load_save()` |
+  |---|---|
+  | unit stats (`set_unit_stat`; measured), required techs (`set_required_tech`), the map and its cells, research done, morale locks (`morale_steady`), `force_robot_command`, daylight | research costs (`set_tech_cost`): the game reads the tech file again when it loads a save |
+  | | the music playlist (`set_music`; not measured, so set it to be safe) |
+
+  The left column comes from what the save holds (the unit-type table, the game's own state block, the day/night
+  section); only unit stats were checked in a game.
 - Files: `campaign.save` writes to disk at once, and a load doesn't take it back. A WAV `game.play_wav` was playing
   doesn't play on.
 - `on_save()` runs while the game writes the file: it may change the script's own variables but mustn't change the
@@ -336,7 +342,17 @@ function is fine: nothing of it is left once the function returns.
 `.lua` file (it holds no code), so loading it needs that mission's `.lua` exactly as it was. After the script changes
 (an update of the mission), its older saves load with the script stopped, and the Mission log and the player are
 told why. A change to the placement file doesn't matter. A later OP2Lua loads the save while its own runtime (the
-scheduler) is unchanged; otherwise the same.
+scheduler) is unchanged; otherwise the same (*Which OP2Lua updates keep saves loading*).
+
+**Releasing an update of a mission**: change a `.lua` only when it needs fixing, since every byte counts (a comment,
+a version string, line endings). Keep things that change with each release out of the script: a version number
+belongs in the placement file, the DLL's description or a message the launcher shows. A tool can tell before loading
+whether a save will carry on (*The state's header*).
+
+**Checking a mission**: save a game, play on a little, load it, and read the Mission log: `saved game: the script
+carries on` and the script's own lines going on from the saved tick mean it worked; anything else says why
+([LOGGING.md](LOGGING.md), *Saved games*). A game that wasn't saved and one that was loaded should log the same lines
+after the save's tick.
 
 **Older saves**: a game saved before OP2Lua 0.8.8 holds no script state. It loads (units, map, triggers as the game
 saved them) with the mission's script stopped, and says so; to play the mission with its script, start it again.
@@ -349,3 +365,46 @@ How it is stored: the bytes are the mission DLL's save region (`GetSaveRegions`)
 their size first. Saving and loading go through three hooks the core puts into Outpost2.exe 1.2.0.7's save and load
 code (src/SaveGame.h); with another Outpost2.exe the hooks aren't made, the Main log says so, and saved games behave
 as before 0.8.8. The state of a large campaign mission takes 10-150 KB.
+
+### Which OP2Lua updates keep saves loading
+
+A save made with one OP2Lua loads with a later one when all of these still hold; a release that breaks one says so
+in its changelog ("old saves stop the script"), and OP2Lua avoids it where it can:
+
+- **The runtime is the same.** The core's own Lua (the scheduler behind `after`/`every`/`when`, `print`, `log`) is a
+  chunk of its own, `OP2Lua runtime`, hashed like the mission's script. Any change to it stops the script in every
+  mission's older saves.
+- **The format number is the same** (below).
+- **What the save names is still there.** Library and binding functions and tables the script kept are saved by name
+  (`game.tick`, `string.format`); removing or renaming one that a save refers to stops that save's script.
+
+Adding functions, fixing what a binding does in the game, and any change to OP2Lua's C++ alone keep saves loading.
+
+### The state's header (for tools)
+
+Tools may read the start of the state from a `.op2` file; this part stays as it is while the format number stays 1,
+and changes only with a new format number. In the save's mission block (magic `0xAEDE0034`, u32 name length, the
+mission DLL's file name) comes the u32 size of the region, then the region. All integers are little-endian; a
+*string* is a u32 length and that many bytes, no terminating zero.
+
+| Field | Contents |
+|---|---|
+| 8 bytes | `OP2LuaSv` |
+| u32 | format: 1 |
+| string | the OP2Lua version that saved (e.g. `0.8.9`) |
+| string | the mission: its DLL's name without `.dll` (letters, digits, `-`, `_`) |
+| u8 | 0: no script was running; 1: the script's state follows; 2: the state couldn't be saved, and a string says why |
+
+With 1, the scripts the state needs follow:
+
+| Field | Contents |
+|---|---|
+| u32 | how many scripts |
+| each: u32 | the script's number in the saving game (used inside the state) |
+| each: string | its name: `OP2Lua runtime`, `mission script`, or `placement` (only when the state uses a function from it) |
+| each: u64 | the script's hash: FNV-1a, 64 bits, over every byte of its file as it is on disk (for `OP2Lua runtime`, the core's built-in text), with prime 1099511628211 and starting value **1469598103934665603** (0x14650FB0739D0383; not FNV's usual 14695981039346656037, and kept so for older saves) |
+| each: u32 | how many functions the compiled script has |
+
+So a tool can tell whether a save will carry on with the installed mission: FNV-1a of `<Mission>.lua`'s bytes must
+equal the `mission script` hash (and the running core's runtime must be the one that saved, which only its version
+tells a tool). What follows (a u32 count, then the values) is OP2Lua's own and may change within a format.
