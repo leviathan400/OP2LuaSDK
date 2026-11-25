@@ -2,6 +2,26 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [0.8.10] - 2026-11-25
+
+### Fixed
+
+- Calls that take a player check it is one (1-7 or a Player) before it reaches the game's player table (PR #4, by
+  David Burke). Given a number past the seven players, or Lua's -1, `player:ally_with`, `mutually_ally_with` and
+  `is_ally`, `unit:transfer` and `do_transfer`, `block:create_units`, the `ai.*_group` calls and the triggers that
+  take a `player` could crash the game or change memory past the table. They now warn in the Mission log (the `ai`
+  calls in the AI log) and do nothing: `create_units` returns 0, no group or trigger is made, and `is_ally` returns
+  false. A trigger with no `player`, or given 0 or a non-number, still counts every player.
+- `trigger.kit` needs a player: made for every player, it crashed the game at its first check. It now warns
+  (`trigger.kit: needs a player`) and makes no trigger, as `trigger.operational` does.
+
+Saves made with 0.8.9 load and carry on.
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.10**; `tools/OP2LuaEditor.exe` is OP2LuaEditor **0.8.10** (build 0035).
+- API.md, FILE-FORMAT.md and LOGGING.md copied from OP2Lua.
+
 ## [0.8.9] - 2026-11-23
 
 ### Changed
