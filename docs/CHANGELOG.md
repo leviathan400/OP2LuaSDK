@@ -2,6 +2,53 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [0.8.14] - 2026-11-26
+
+### Added
+
+- `unit:launch_at_pixel(px, py, force)`: with `force` true the Spaceport launches although it is EMPed.
+- The type names `SULV` and `RLV`, the Spaceport's two rockets, for a count trigger's `type` and
+  `unit.object_on_pad`.
+- `player.rlv_count` and `player:capture_rlv(from)`: the RLVs a player has, and taking one from another player.
+
+### Fixed
+
+- `trigger.count{type = "RLV", ...}` never fired: the name wasn't known.
+- `unit:set_factory_cargo(1, "RLV")` on a Spaceport now puts the rocket on the launch pad, ready to launch.
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.14**; `tools/OP2LuaEditor.exe` is OP2LuaEditor 0.8.14 (build 0039, no
+  change but the version).
+- API.md, FILE-FORMAT.md and LOGGING.md copied from OP2Lua.
+
+Saves made with 0.8.13 load and carry on.
+
+## [0.8.13] - 2026-11-26
+
+### Added
+
+- `player.morale` and `player.morale_level`, read and set: the colony's morale (0-99) and its level.
+- `player:morale_state()` / `player:set_morale_state(t)`: the player's whole morale record, the block the game itself
+  carries from one campaign mission to the next, so a campaign can save it with `campaign.save` and give it back.
+- `player:techs()`: the topics the player has researched, to carry over and give back with `mark_research`.
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.13**; `tools/OP2LuaEditor.exe` is OP2LuaEditor 0.8.13 (build 0038).
+- OP2LuaEditor's Save Mission also writes the mission DLL from the placement's header, and Mission Properties sets
+  every value the game reads from it: name, map, tech tree file, type, players, max tech level, unit-only and a
+  multiplayer game's AI players (new header keys `unit_only`, `ai_players`). A DLL that disagreed with its
+  placement (the stub's max tech level 12, say) is put right on the next save.
+- `tools/op2lua-newmission.exe`: `--tech`, `--max-tech`, `--unit-only`, `--ai-players`, more `--type` names, and
+  `--dll-from <Base>.placement.lua` to build an existing mission's DLL from its header. The Linux build is unchanged.
+- `tools/new-mission.ps1` does the same as `op2lua-newmission.exe` (`-Tech`, `-MaxTech`, `-UnitOnly`, `-AiPlayers`,
+  every `-Type`, multiplayer skeletons, `-DllFrom`) and writes the same files byte for byte. Before, it made Colony
+  missions with only a name and a map.
+- API.md, FILE-FORMAT.md and LOGGING.md copied from OP2Lua.
+
+Saves made with 0.8.12 load and carry on.
+
 ## [0.8.12] - 2026-11-25
 
 ### Changed

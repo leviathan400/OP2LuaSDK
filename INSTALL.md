@@ -16,7 +16,8 @@ OPU\maps\LUA\               <- the sample missions (.dll + .lua + .placement.lua
 Then launch Outpost 2, start a **New Colony Game**, and pick a mission from the list.
 
 The sample pack on the releases page is v0.6.0 and carries OP2LuaCore 0.6.0. Replace its `OPU\OP2LuaCore.dll` with
-the latest: 0.8.12, from the [OP2Lua releases](https://github.com/leviathan400/OP2Lua/releases) or this SDK's `bin\`.
+a newer one: the latest release, 0.8.12, from the [OP2Lua releases](https://github.com/leviathan400/OP2Lua/releases),
+or this SDK's `bin\`, which has 0.8.14.
 
 From the SDK itself, copy `bin\OP2LuaCore.dll` into `OPU\` and a sample's three files into `OPU\maps\LUA\`.
 

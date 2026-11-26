@@ -55,10 +55,13 @@ OP2LuaSDK/
                               storm, vortex, lava, blight) with base-targeting and a min-gap timer
   tools/
     OP2LuaEditor.exe        - the visual layout editor (Windows, .NET Framework 4.8), with OP2UtilityDotNet.dll
-    op2lua-newmission.exe   - scaffold a new named mission, Windows (DLL + skeleton scripts)
+    op2lua-newmission.exe   - scaffold a new named mission, Windows (DLL + skeleton scripts): map, tech tree,
+                              type, players, max tech level, unit-only, AI players. --dll-from <X.placement.lua>
+                              rebuilds a mission's DLL from its placement header.
     op2lua-newmission       - the same tool, prebuilt for Linux (x86-64, static). `chmod +x` it.
                               (An older build: --map only, and its DLL lacks the c - rename it c<Name>.dll.)
-    new-mission.ps1         - the same scaffolder as a PowerShell script (Windows; Colony missions only)
+    new-mission.ps1         - the same tool as a PowerShell script (Windows): the same options (-Map, -Tech,
+                              -Type, -Players, -MaxTech, -UnitOnly, -AiPlayers, -DllFrom) and the same files
                               (macOS / other: build from source - op2lua-newmission/ in the OP2Lua repo)
 ```
 
