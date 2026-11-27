@@ -2,6 +2,31 @@
 
 All notable changes to the OP2Lua SDK. Engine internals are in the OP2Lua changelog.
 
+## [0.8.18] - 2026-11-27
+
+Covers OP2Lua 0.8.15 to 0.8.18. Each adds a call or form for copying a mission DLL's own numbers exactly; nothing
+else changes.
+
+### Added
+
+- `game.create_beacon_raw{ at=, type=, ore=, yield=, variant= }`: a beacon made with a mission DLL's own numbers,
+  passed unchanged to the game. `game.create_beacon` is unchanged.
+- `game.units_closest` also returns each unit's distance as a second table; a caller taking one value is unchanged.
+- `game.units_at(at)`: the units on one tile, structures on any tile of their footprint.
+- Raw rectangles: an area argument takes `{ x1, y1, x2, y2, raw = true }`, the game's own rectangle, unconverted and
+  not wrapped.
+- `unit:build_raw{ waypoint = { px, py }, rect = { x1, y1, x2, y2 } }`: a Build order with a mission DLL's own
+  waypoint (map pixels) and site (the game's tiles).
+- `unit.group_id`: the group the game has the unit in, or nil.
+
+### Changed
+
+- `bin/OP2LuaCore.dll` is OP2Lua **0.8.18**; `tools/OP2LuaEditor.exe` is OP2LuaEditor 0.8.18 (build 0040, no
+  change but the version).
+- API.md and FILE-FORMAT.md copied from OP2Lua.
+
+Saves made with 0.8.14 to 0.8.17 load and carry on.
+
 ## [0.8.14] - 2026-11-26
 
 ### Added
